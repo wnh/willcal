@@ -1,19 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import format from 'date-fns/format';
+import parse from 'date-fns/parse';
+import startOfWeek from 'date-fns/startOfWeek';
+import getDay from 'date-fns/getDay';
+import enUS from 'date-fns/locale/en-US';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 
-function Clock() {
-  const [time, setTime] = useState(new Date().toLocaleTimeString());
+const locales = {
+  'en-US': enUS,
+};
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTime(new Date().toLocaleTimeString());
-    }, 1000);
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales,
+});
 
-    return () => clearInterval(interval);
-  }, []);
-
-  return <h1>{time}</h1>;
+function App() {
+  return (
+    <div style={{ height: '100vh' }}>
+      <Calendar
+        localizer={localizer}
+        events={[]}
+        defaultView="week"
+        style={{ height: '100%' }}
+      />
+    </div>
+  );
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
-root.render(<Clock />);
+root.render(<App />);
