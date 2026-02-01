@@ -1,28 +1,26 @@
+import { produce } from 'immer';
 import { EventsState, EventActionTypes, ADD_EVENT, DELETE_EVENT, AddEventAction, DeleteEventAction } from './types';
 
 const initialState: EventsState = {
   events: [],
 };
 
-export function eventsReducer(
-  state: EventsState = initialState,
-  action: EventActionTypes | { type: string }
-): EventsState {
-  switch (action.type) {
-    case ADD_EVENT:
-      return {
-        ...state,
-        events: [...state.events, (action as AddEventAction).payload],
-      };
-    case DELETE_EVENT:
-      return {
-        ...state,
-        events: state.events.filter((event) => event.id !== (action as DeleteEventAction).payload),
-      };
-    default:
-      if (action.type.startsWith('@@')) {
-        return state;
-      }
-      throw new Error(`Unhandled action type: ${action.type}`);
-  }
-}
+export const eventsReducer = produce(
+  (draft: EventsState, action: EventActionTypes | { type: string }) => {
+    switch (action.type) {
+      case ADD_EVENT:
+        draft.events.push((action as AddEventAction).payload);
+        break;
+      case DELETE_EVENT:
+        const eventId = (action as DeleteEventAction).payload;
+        draft.events = draft.events.filter((event) => event.id !== eventId);
+        break;
+      default:
+        if (action.type.startsWith('@@')) {
+          return;
+        }
+        throw new Error(`Unhandled action type: ${action.type}`);
+    }
+  },
+  initialState
+);
