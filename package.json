@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.html",
   "scripts": {
-    "build": "esbuild src/main.tsx --bundle --outdir=dist",
+    "build": "node esbuild.config.js",
     "start": "npm run build && nw .",
     "dev": "npm run build && nw --auto-open-devtools-for-tabs ."
 
@@ -11,6 +11,7 @@
   "dependencies": {
     "date-fns": "^2.30.0",
     "immer": "^10.0.0",
+    "node-sqlite3-wasm": "^0.8.0",
     "react": "^18.2.0",
     "react-big-calendar": "^1.8.0",
     "react-dom": "^18.2.0",

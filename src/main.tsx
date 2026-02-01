@@ -11,8 +11,16 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { store, RootState, AppDispatch } from './store/store';
 import { addEvent, deleteEvent } from './store/actions';
 import { CalendarEvent } from './store/types';
+import { testDatabase } from './db/database';
 
 declare const nw: any;
+
+// Test database on startup
+try {
+  testDatabase();
+} catch (error) {
+  console.error('Database test failed:', error);
+}
 
 const locales = {
   'en-US': enUS,
