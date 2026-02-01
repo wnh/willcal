@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import { Calendar, dateFnsLocalizer, SlotInfo } from 'react-big-calendar';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
@@ -7,15 +8,11 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { store, RootState, AppDispatch } from './store/store';
+import { addEvent, deleteEvent } from './store/actions';
+import { CalendarEvent } from './store/types';
 
 declare const nw: any;
-
-interface CalendarEvent {
-  id: number;
-  title: string;
-  start: Date;
-  end: Date;
-}
 
 const locales = {
   'en-US': enUS,
@@ -35,10 +32,11 @@ interface EventWrapperProps {
 }
 
 function App() {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const events = useSelector((state: RootState) => state.events);
 
   const handleDeleteEvent = (eventId: number) => {
-    setEvents(events.filter((e) => e.id !== eventId));
+    dispatch(deleteEvent(eventId));
   };
 
   function EventWrapper({ event, children }: EventWrapperProps) {
@@ -72,7 +70,7 @@ function App() {
       start: slotInfo.start,
       end: slotInfo.end,
     };
-    setEvents([...events, newEvent]);
+    dispatch(addEvent(newEvent));
   };
 
   const handleSelectEvent = (event: CalendarEvent, e: React.SyntheticEvent) => {
@@ -105,4 +103,8 @@ function App() {
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
-root.render(<App />);
+root.render(
+  <Provider store={store}>
+    <App />
+  </Provider>
+);
