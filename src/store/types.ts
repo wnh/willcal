@@ -11,6 +11,7 @@ export interface EventsState {
 
 export const ADD_EVENT = 'ADD_EVENT';
 export const DELETE_EVENT = 'DELETE_EVENT';
+export const LOAD_EVENTS = 'LOAD_EVENTS';
 
 export interface AddEventAction {
   type: typeof ADD_EVENT;
@@ -22,4 +23,9 @@ export interface DeleteEventAction {
   payload: number;
 }
 
-export type EventActionTypes = AddEventAction | DeleteEventAction;
+export interface LoadEventsAction {
+  type: typeof LOAD_EVENTS;
+  payload: CalendarEvent[];
+}
+
+export type EventActionTypes = AddEventAction | DeleteEventAction | LoadEventsAction;

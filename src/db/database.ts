@@ -1,27 +1,65 @@
-export function testDatabase() {
-  console.log('Initializing SQLite...');
+import { CalendarEvent } from '../store/types';
+
+class EventsDatabase {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
+  addEvent(event: CalendarEvent): void {
+    this.db.run(
+      'INSERT INTO events (id, title, start, end) VALUES (?, ?, ?, ?)',
+      [event.id, event.title, event.start.toISOString(), event.end.toISOString()]
+    );
+  }
+
+  deleteEvent(id: number): void {
+    this.db.run('DELETE FROM events WHERE id = ?', [id]);
+  }
+
+  getAllEvents(): CalendarEvent[] {
+    const rows = this.db.all('SELECT * FROM events');
+
+    return rows.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      start: new Date(row.start),
+      end: new Date(row.end),
+    }));
+  }
+
+  close(): void {
+    this.db.close();
+  }
+}
+
+let dbInstance: EventsDatabase | null = null;
+
+export function openDatabase(filename: string): EventsDatabase {
+  console.log('Opening database:', filename);
 
   const { Database } = require('node-sqlite3-wasm');
-  console.log('SQLite module loaded');
-
-  const db = new Database(':memory:');
-  console.log('Database opened');
+  const db = new Database(filename);
 
   db.exec(`
-    CREATE TABLE test (
+    CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY,
-      name TEXT
+      title TEXT NOT NULL,
+      start TEXT NOT NULL,
+      end TEXT NOT NULL
     );
   `);
 
-  db.run('INSERT INTO test (name) VALUES (?)', ['Hello']);
-  db.run('INSERT INTO test (name) VALUES (?)', ['World']);
+  console.log('Database opened');
 
-  console.log('Test table created and populated');
+  dbInstance = new EventsDatabase(db);
+  return dbInstance;
+}
 
-  const results = db.all('SELECT * FROM test');
-  console.log('Query results:', results);
-
-  db.close();
-  console.log('Database closed');
+export function getDatabase(): EventsDatabase {
+  if (!dbInstance) {
+    throw new Error('Database not initialized. Call openDatabase() first.');
+  }
+  return dbInstance;
 }

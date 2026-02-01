@@ -7,19 +7,47 @@ import parse from 'date-fns/parse';
 import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import enUS from 'date-fns/locale/en-US';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { store, RootState, AppDispatch } from './store/store';
-import { addEvent, deleteEvent } from './store/actions';
+import { addEvent, deleteEvent, loadEvents } from './store/actions';
 import { CalendarEvent } from './store/types';
-import { testDatabase } from './db/database';
+import { openDatabase } from './db/database';
 
 declare const nw: any;
 
-// Test database on startup
+// Parse command line arguments for database filename
+function getDatabaseFilename(): string {
+  const args = process.argv.slice(2); // Skip node and script path
+
+  for (const arg of args) {
+    if (arg.startsWith('--db=')) {
+      return arg.substring(5);
+    }
+  }
+
+  // Default: use XDG_DATA_HOME or ~/.local/share
+  const dataHome = process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share');
+  const appDataDir = path.join(dataHome, 'willcal');
+
+  // Create directory if it doesn't exist
+  if (!fs.existsSync(appDataDir)) {
+    fs.mkdirSync(appDataDir, { recursive: true });
+  }
+
+  return path.join(appDataDir, 'willcal.db');
+}
+
+// Initialize database and load events on startup
 try {
-  testDatabase();
+  const dbFilename = getDatabaseFilename();
+  console.log('Using database:', dbFilename);
+  openDatabase(dbFilename);
+  store.dispatch(loadEvents());
 } catch (error) {
-  console.error('Database test failed:', error);
+  console.error('Database initialization failed:', error);
 }
 
 const locales = {

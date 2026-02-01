@@ -1,5 +1,5 @@
 import { produce } from 'immer';
-import { EventsState, EventActionTypes, ADD_EVENT, DELETE_EVENT, AddEventAction, DeleteEventAction } from './types';
+import { EventsState, EventActionTypes, ADD_EVENT, DELETE_EVENT, LOAD_EVENTS, AddEventAction, DeleteEventAction, LoadEventsAction } from './types';
 
 const initialState: EventsState = {
   events: [],
@@ -14,6 +14,9 @@ export const eventsReducer = produce(
       case DELETE_EVENT:
         const eventId = (action as DeleteEventAction).payload;
         draft.events = draft.events.filter((event) => event.id !== eventId);
+        break;
+      case LOAD_EVENTS:
+        draft.events = (action as LoadEventsAction).payload;
         break;
       default:
         if (action.type.startsWith('@@')) {
