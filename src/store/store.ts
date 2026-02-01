@@ -1,8 +1,8 @@
 import { legacy_createStore as createStore } from 'redux';
-import { eventsReducer } from './reducer';
-import { EventsState } from './types';
+import { blocksReducer } from './reducer';
+import { BlocksState } from './types';
 
-export const store = createStore(eventsReducer);
+export const store = createStore(blocksReducer);
 
-export type RootState = EventsState;
+export type RootState = BlocksState;
 export type AppDispatch = typeof store.dispatch;

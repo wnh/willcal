@@ -14,8 +14,8 @@ import os from 'os';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { store, RootState, AppDispatch } from './store/store';
-import { addEvent, deleteEvent, setDateRange, updateEventTime } from './store/actions';
-import { CalendarEvent } from './store/types';
+import { addBlock, deleteBlock, setDateRange, updateBlockTime } from './store/actions';
+import { CalendarBlock } from './store/types';
 import { openDatabase, getDatabase } from './db/database';
 
 declare const nw: any;
@@ -65,8 +65,8 @@ const localizer = dateFnsLocalizer({
 
 const DnDCalendar = withDragAndDrop(Calendar);
 
-interface EventWrapperProps {
-  event: CalendarEvent;
+interface BlockWrapperProps {
+  event: CalendarBlock;
   children: React.ReactNode;
 }
 
@@ -83,11 +83,11 @@ function App() {
     dispatch(setDateRange(start, end));
   }, [dispatch]);
 
-  // Query events from DB whenever date range changes
-  const events = useMemo(() => {
+  // Query blocks from DB whenever date range changes
+  const blocks = useMemo(() => {
     if (!dateRange) return [];
     const db = getDatabase();
-    return db.getEventsByDateRange(dateRange.start, dateRange.end);
+    return db.getBlocksByDateRange(dateRange.start, dateRange.end);
   }, [dateRange]);
 
   const handleRangeChange = (range: Date[] | { start: Date; end: Date }) => {
@@ -110,25 +110,25 @@ function App() {
     dispatch(setDateRange(start, end));
   };
 
-  const handleDeleteEvent = (eventId: number) => {
-    deleteEvent(eventId);
+  const handleDeleteBlock = (blockId: number) => {
+    deleteBlock(blockId);
     // Re-trigger render by updating the date range (same range)
     if (dateRange) {
       dispatch(setDateRange(dateRange.start, dateRange.end));
     }
   };
 
-  function EventWrapper({ event, children }: EventWrapperProps) {
+  function BlockWrapper({ event: block, children }: BlockWrapperProps) {
     const handleContextMenu = (e: React.MouseEvent) => {
       e.preventDefault();
-      console.log('Right click on event:', event);
+      console.log('Right click on block:', block);
 
       const menu = new nw.Menu();
       menu.append(new nw.MenuItem({
         label: 'Delete',
         click: () => {
-          console.log('Delete clicked for event:', event);
-          handleDeleteEvent(event.id);
+          console.log('Delete clicked for block:', block);
+          handleDeleteBlock(block.id);
         }
       }));
 
@@ -143,22 +143,22 @@ function App() {
   }
 
   const handleSelectSlot = (slotInfo: SlotInfo) => {
-    const newEvent: CalendarEvent = {
+    const newBlock: CalendarBlock = {
       id: Date.now(),
-      title: 'New Event',
+      title: 'New Block',
       start: slotInfo.start,
       end: slotInfo.end,
     };
-    addEvent(newEvent);
+    addBlock(newBlock);
     // Re-trigger render by updating the date range (same range)
     if (dateRange) {
       dispatch(setDateRange(dateRange.start, dateRange.end));
     }
   };
 
-  const handleSelectEvent = (event: CalendarEvent, e: React.SyntheticEvent) => {
+  const handleSelectBlock = (block: CalendarBlock, e: React.SyntheticEvent) => {
     const nativeEvent = e.nativeEvent as MouseEvent;
-    console.log('Event selected:', event);
+    console.log('Block selected:', block);
     console.log('Native event:', nativeEvent);
     console.log('Button:', nativeEvent.button);
 
@@ -167,16 +167,16 @@ function App() {
     }
   };
 
-  const handleEventDrop = ({ event, start, end }: { event: CalendarEvent; start: Date; end: Date }) => {
-    updateEventTime(event.id, start, end);
+  const handleBlockDrop = ({ event, start, end }: { event: CalendarBlock; start: Date; end: Date }) => {
+    updateBlockTime(event.id, start, end);
     // Re-trigger render by updating the date range (same range)
     if (dateRange) {
       dispatch(setDateRange(dateRange.start, dateRange.end));
     }
   };
 
-  const handleEventResize = ({ event, start, end }: { event: CalendarEvent; start: Date; end: Date }) => {
-    updateEventTime(event.id, start, end);
+  const handleBlockResize = ({ event, start, end }: { event: CalendarBlock; start: Date; end: Date }) => {
+    updateBlockTime(event.id, start, end);
     // Re-trigger render by updating the date range (same range)
     if (dateRange) {
       dispatch(setDateRange(dateRange.start, dateRange.end));
@@ -187,16 +187,16 @@ function App() {
     <div style={{ height: '100vh' }}>
       <DnDCalendar
         localizer={localizer}
-        events={events}
+        events={blocks}
         defaultView="week"
         selectable
         onSelectSlot={handleSelectSlot}
-        onSelectEvent={handleSelectEvent}
+        onSelectEvent={handleSelectBlock}
         onRangeChange={handleRangeChange}
-        onEventDrop={handleEventDrop}
-        onEventResize={handleEventResize}
+        onEventDrop={handleBlockDrop}
+        onEventResize={handleBlockResize}
         components={{
-          eventWrapper: EventWrapper,
+          eventWrapper: BlockWrapper,
         }}
         style={{ height: '100%' }}
       />

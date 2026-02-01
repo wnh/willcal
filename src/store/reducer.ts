@@ -1,12 +1,13 @@
 import { produce } from 'immer';
-import { EventsState, EventActionTypes, SET_DATE_RANGE, SetDateRangeAction } from './types';
+import { BlocksState, BlockActionTypes, SET_DATE_RANGE, SetDateRangeAction } from './types';
 
-const initialState: EventsState = {
+const initialState: BlocksState = {
   dateRange: null,
 };
 
-export const eventsReducer = produce(
-  (draft: EventsState, action: EventActionTypes | { type: string }) => {
+export const blocksReducer = produce(
+  (draft: BlocksState, action: BlockActionTypes | { type: string }) => {
+    console.log('Redux action:', action.type, action);
     switch (action.type) {
       case SET_DATE_RANGE:
         draft.dateRange = (action as SetDateRangeAction).payload;

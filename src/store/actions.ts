@@ -1,4 +1,4 @@
-import { CalendarEvent, DateRange, SET_DATE_RANGE, SetDateRangeAction } from './types';
+import { CalendarBlock, DateRange, SET_DATE_RANGE, SetDateRangeAction } from './types';
 import { getDatabase } from '../db/database';
 
 export function setDateRange(start: Date, end: Date): SetDateRangeAction {
@@ -8,17 +8,17 @@ export function setDateRange(start: Date, end: Date): SetDateRangeAction {
   };
 }
 
-export function addEvent(event: CalendarEvent): void {
+export function addBlock(block: CalendarBlock): void {
   const db = getDatabase();
-  db.addEvent(event);
+  db.addBlock(block);
 }
 
-export function deleteEvent(eventId: number): void {
+export function deleteBlock(blockId: number): void {
   const db = getDatabase();
-  db.deleteEvent(eventId);
+  db.deleteBlock(blockId);
 }
 
-export function updateEventTime(eventId: number, start: Date, end: Date): void {
+export function updateBlockTime(blockId: number, start: Date, end: Date): void {
   const db = getDatabase();
-  db.updateEventTime(eventId, start, end);
+  db.updateBlockTime(blockId, start, end);
 }

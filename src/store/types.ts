@@ -1,4 +1,4 @@
-export interface CalendarEvent {
+export interface CalendarBlock {
   id: number;
   title: string;
   start: Date;
@@ -10,7 +10,7 @@ export interface DateRange {
   end: Date;
 }
 
-export interface EventsState {
+export interface BlocksState {
   dateRange: DateRange | null;
 }
 
@@ -21,4 +21,4 @@ export interface SetDateRangeAction {
   payload: DateRange;
 }
 
-export type EventActionTypes = SetDateRangeAction;
+export type BlockActionTypes = SetDateRangeAction;

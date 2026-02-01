@@ -1,32 +1,44 @@
-import { CalendarEvent } from '../store/types';
+import { CalendarBlock } from '../store/types';
 
-class EventsDatabase {
+class BlocksDatabase {
   private db: any;
 
   constructor(db: any) {
     this.db = db;
   }
 
-  addEvent(event: CalendarEvent): void {
-    this.db.run(
-      'INSERT INTO events (id, title, start, end) VALUES (?, ?, ?, ?)',
-      [event.id, event.title, event.start.toISOString(), event.end.toISOString()]
+  private run(sql: string, params?: any[]): void {
+    console.log('SQL run:', sql, 'params:', params);
+    this.db.run(sql, params);
+  }
+
+  private all(sql: string, params?: any[]): any[] {
+    console.log('SQL all:', sql, 'params:', params);
+    const rows = this.db.all(sql, params);
+    console.log('SQL result:', rows.length, 'rows');
+    return rows;
+  }
+
+  addBlock(block: CalendarBlock): void {
+    this.run(
+      'INSERT INTO blocks (id, title, start, end) VALUES (?, ?, ?, ?)',
+      [block.id, block.title, block.start.toISOString(), block.end.toISOString()]
     );
   }
 
-  deleteEvent(id: number): void {
-    this.db.run('DELETE FROM events WHERE id = ?', [id]);
+  deleteBlock(id: number): void {
+    this.run('DELETE FROM blocks WHERE id = ?', [id]);
   }
 
-  updateEventTime(id: number, start: Date, end: Date): void {
-    this.db.run(
-      'UPDATE events SET start = ?, end = ? WHERE id = ?',
+  updateBlockTime(id: number, start: Date, end: Date): void {
+    this.run(
+      'UPDATE blocks SET start = ?, end = ? WHERE id = ?',
       [start.toISOString(), end.toISOString(), id]
     );
   }
 
-  getAllEvents(): CalendarEvent[] {
-    const rows = this.db.all('SELECT * FROM events');
+  getAllBlocks(): CalendarBlock[] {
+    const rows = this.all('SELECT * FROM blocks');
 
     return rows.map((row: any) => ({
       id: row.id,
@@ -36,9 +48,9 @@ class EventsDatabase {
     }));
   }
 
-  getEventsByDateRange(start: Date, end: Date): CalendarEvent[] {
-    const rows = this.db.all(
-      'SELECT * FROM events WHERE start < ? AND end > ?',
+  getBlocksByDateRange(start: Date, end: Date): CalendarBlock[] {
+    const rows = this.all(
+      'SELECT * FROM blocks WHERE start < ? AND end > ?',
       [end.toISOString(), start.toISOString()]
     );
 
@@ -55,16 +67,16 @@ class EventsDatabase {
   }
 }
 
-let dbInstance: EventsDatabase | null = null;
+let dbInstance: BlocksDatabase | null = null;
 
-export function openDatabase(filename: string): EventsDatabase {
+export function openDatabase(filename: string): BlocksDatabase {
   console.log('Opening database:', filename);
 
   const { Database } = require('node-sqlite3-wasm');
   const db = new Database(filename);
 
   db.exec(`
-    CREATE TABLE IF NOT EXISTS events (
+    CREATE TABLE IF NOT EXISTS blocks (
       id INTEGER PRIMARY KEY,
       title TEXT NOT NULL,
       start TEXT NOT NULL,
@@ -74,11 +86,11 @@ export function openDatabase(filename: string): EventsDatabase {
 
   console.log('Database opened');
 
-  dbInstance = new EventsDatabase(db);
+  dbInstance = new BlocksDatabase(db);
   return dbInstance;
 }
 
-export function getDatabase(): EventsDatabase {
+export function getDatabase(): BlocksDatabase {
   if (!dbInstance) {
     throw new Error('Database not initialized. Call openDatabase() first.');
   }
