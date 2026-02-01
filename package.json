@@ -4,7 +4,9 @@
   "main": "index.html",
   "scripts": {
     "build": "esbuild src/main.tsx --bundle --outdir=dist",
-    "start": "npm run build && nw ."
+    "start": "npm run build && nw .",
+    "dev": "npm run build && nw --auto-open-devtools-for-tabs ."
+
   },
   "dependencies": {
     "date-fns": "^2.30.0",
