@@ -18,6 +18,13 @@ class EventsDatabase {
     this.db.run('DELETE FROM events WHERE id = ?', [id]);
   }
 
+  updateEventTime(id: number, start: Date, end: Date): void {
+    this.db.run(
+      'UPDATE events SET start = ?, end = ? WHERE id = ?',
+      [start.toISOString(), end.toISOString(), id]
+    );
+  }
+
   getAllEvents(): CalendarEvent[] {
     const rows = this.db.all('SELECT * FROM events');
 

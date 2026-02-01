@@ -17,3 +17,8 @@ export function deleteEvent(eventId: number): void {
   const db = getDatabase();
   db.deleteEvent(eventId);
 }
+
+export function updateEventTime(eventId: number, start: Date, end: Date): void {
+  const db = getDatabase();
+  db.updateEventTime(eventId, start, end);
+}

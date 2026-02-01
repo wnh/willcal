@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { Calendar, dateFnsLocalizer, SlotInfo } from 'react-big-calendar';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
 import startOfWeek from 'date-fns/startOfWeek';
@@ -11,8 +12,9 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { store, RootState, AppDispatch } from './store/store';
-import { addEvent, deleteEvent, setDateRange } from './store/actions';
+import { addEvent, deleteEvent, setDateRange, updateEventTime } from './store/actions';
 import { CalendarEvent } from './store/types';
 import { openDatabase, getDatabase } from './db/database';
 
@@ -60,6 +62,8 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+
+const DnDCalendar = withDragAndDrop(Calendar);
 
 interface EventWrapperProps {
   event: CalendarEvent;
@@ -163,9 +167,25 @@ function App() {
     }
   };
 
+  const handleEventDrop = ({ event, start, end }: { event: CalendarEvent; start: Date; end: Date }) => {
+    updateEventTime(event.id, start, end);
+    // Re-trigger render by updating the date range (same range)
+    if (dateRange) {
+      dispatch(setDateRange(dateRange.start, dateRange.end));
+    }
+  };
+
+  const handleEventResize = ({ event, start, end }: { event: CalendarEvent; start: Date; end: Date }) => {
+    updateEventTime(event.id, start, end);
+    // Re-trigger render by updating the date range (same range)
+    if (dateRange) {
+      dispatch(setDateRange(dateRange.start, dateRange.end));
+    }
+  };
+
   return (
     <div style={{ height: '100vh' }}>
-      <Calendar
+      <DnDCalendar
         localizer={localizer}
         events={events}
         defaultView="week"
@@ -173,6 +193,8 @@ function App() {
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleSelectEvent}
         onRangeChange={handleRangeChange}
+        onEventDrop={handleEventDrop}
+        onEventResize={handleEventResize}
         components={{
           eventWrapper: EventWrapper,
         }}
