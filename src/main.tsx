@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { Calendar, dateFnsLocalizer, SlotInfo } from 'react-big-calendar';
@@ -12,9 +12,9 @@ import fs from 'fs';
 import os from 'os';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { store, RootState, AppDispatch } from './store/store';
-import { addEvent, deleteEvent, loadEvents } from './store/actions';
+import { addEvent, deleteEvent, setDateRange } from './store/actions';
 import { CalendarEvent } from './store/types';
-import { openDatabase } from './db/database';
+import { openDatabase, getDatabase } from './db/database';
 
 declare const nw: any;
 
@@ -40,12 +40,11 @@ function getDatabaseFilename(): string {
   return path.join(appDataDir, 'willcal.db');
 }
 
-// Initialize database and load events on startup
+// Initialize database on startup
 try {
   const dbFilename = getDatabaseFilename();
   console.log('Using database:', dbFilename);
   openDatabase(dbFilename);
-  store.dispatch(loadEvents());
 } catch (error) {
   console.error('Database initialization failed:', error);
 }
@@ -69,10 +68,50 @@ interface EventWrapperProps {
 
 function App() {
   const dispatch = useDispatch<AppDispatch>();
-  const events = useSelector((state: RootState) => state.events);
+  const dateRange = useSelector((state: RootState) => state.dateRange);
+
+  // Set initial date range for the week view
+  useEffect(() => {
+    const now = new Date();
+    const start = startOfWeek(now);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    dispatch(setDateRange(start, end));
+  }, [dispatch]);
+
+  // Query events from DB whenever date range changes
+  const events = useMemo(() => {
+    if (!dateRange) return [];
+    const db = getDatabase();
+    return db.getEventsByDateRange(dateRange.start, dateRange.end);
+  }, [dateRange]);
+
+  const handleRangeChange = (range: Date[] | { start: Date; end: Date }) => {
+    let start: Date;
+    let end: Date;
+
+    if (Array.isArray(range)) {
+      // For week view, range is an array of dates
+      start = range[0];
+      end = range[range.length - 1];
+      // Add one day to end to include the full last day
+      end = new Date(end);
+      end.setDate(end.getDate() + 1);
+    } else {
+      // For month/agenda views, range is an object with start and end
+      start = range.start;
+      end = range.end;
+    }
+
+    dispatch(setDateRange(start, end));
+  };
 
   const handleDeleteEvent = (eventId: number) => {
-    dispatch(deleteEvent(eventId));
+    deleteEvent(eventId);
+    // Re-trigger render by updating the date range (same range)
+    if (dateRange) {
+      dispatch(setDateRange(dateRange.start, dateRange.end));
+    }
   };
 
   function EventWrapper({ event, children }: EventWrapperProps) {
@@ -106,7 +145,11 @@ function App() {
       start: slotInfo.start,
       end: slotInfo.end,
     };
-    dispatch(addEvent(newEvent));
+    addEvent(newEvent);
+    // Re-trigger render by updating the date range (same range)
+    if (dateRange) {
+      dispatch(setDateRange(dateRange.start, dateRange.end));
+    }
   };
 
   const handleSelectEvent = (event: CalendarEvent, e: React.SyntheticEvent) => {
@@ -129,6 +172,7 @@ function App() {
         selectable
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleSelectEvent}
+        onRangeChange={handleRangeChange}
         components={{
           eventWrapper: EventWrapper,
         }}

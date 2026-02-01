@@ -29,6 +29,20 @@ class EventsDatabase {
     }));
   }
 
+  getEventsByDateRange(start: Date, end: Date): CalendarEvent[] {
+    const rows = this.db.all(
+      'SELECT * FROM events WHERE start < ? AND end > ?',
+      [end.toISOString(), start.toISOString()]
+    );
+
+    return rows.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      start: new Date(row.start),
+      end: new Date(row.end),
+    }));
+  }
+
   close(): void {
     this.db.close();
   }

@@ -5,27 +5,20 @@ export interface CalendarEvent {
   end: Date;
 }
 
+export interface DateRange {
+  start: Date;
+  end: Date;
+}
+
 export interface EventsState {
-  events: CalendarEvent[];
+  dateRange: DateRange | null;
 }
 
-export const ADD_EVENT = 'ADD_EVENT';
-export const DELETE_EVENT = 'DELETE_EVENT';
-export const LOAD_EVENTS = 'LOAD_EVENTS';
+export const SET_DATE_RANGE = 'SET_DATE_RANGE';
 
-export interface AddEventAction {
-  type: typeof ADD_EVENT;
-  payload: CalendarEvent;
+export interface SetDateRangeAction {
+  type: typeof SET_DATE_RANGE;
+  payload: DateRange;
 }
 
-export interface DeleteEventAction {
-  type: typeof DELETE_EVENT;
-  payload: number;
-}
-
-export interface LoadEventsAction {
-  type: typeof LOAD_EVENTS;
-  payload: CalendarEvent[];
-}
-
-export type EventActionTypes = AddEventAction | DeleteEventAction | LoadEventsAction;
+export type EventActionTypes = SetDateRangeAction;
