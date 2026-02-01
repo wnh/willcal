@@ -1,18 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WillCal - Calendar Application</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script>
-      // Make Node.js require available in the window context for NW.js
-      if (typeof nw !== 'undefined' && typeof require !== 'undefined') {
-        window.nodeRequire = require;
-      }
-    </script>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>WillCal</title>
+</head>
+<body>
+  <h1>Hello World</h1>
+  <script src="dist/main.js"></script>
+</body>
 </html>

@@ -1,50 +1,12 @@
 {
   "name": "willcal",
   "version": "1.0.0",
-  "description": "A desktop calendar application with drag-and-drop functionality",
-  "main": "dist/index.html",
+  "main": "index.html",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "nw": "nw .",
-    "nw-dev": "npm run build && nw ."
-  },
-  "keywords": [
-    "calendar",
-    "nwjs",
-    "desktop"
-  ],
-  "author": "",
-  "license": "ISC",
-  "window": {
-    "title": "WillCal - Calendar Application",
-    "width": 1280,
-    "height": 800,
-    "min_width": 800,
-    "min_height": 600,
-    "position": "center",
-    "resizable": true
-  },
-  "chromium-args": "--mixed-context",
-  "node-remote": "*",
-  "nodejs": true,
-  "node-main": "",
-  "dependencies": {
-    "better-sqlite3": "^12.6.2",
-    "date-fns": "^4.1.0",
-    "react": "^19.2.4",
-    "react-big-calendar": "^1.19.4",
-    "react-dom": "^19.2.4"
+    "build": "tsc",
+    "start": "npm run build && nw ."
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^25.0.10",
-    "@types/react": "^19.2.10",
-    "@types/react-big-calendar": "^1.16.3",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.2",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "typescript": "^5.3.0"
   }
 }

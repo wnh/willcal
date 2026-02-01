@@ -8,21 +8,13 @@ pkgs.mkShell {
     # NW.js runtime for running the desktop app
     nwjs
 
-    # Build tools that better-sqlite3 needs
-    python3
-    gcc
-    gnumake
-
-    # Libraries needed for NW.js on Linux
-    pkg-config
-
-    # Additional libraries that NW.js might need
+    # Additional libraries that NW.js needs on Linux
     alsa-lib
     cups
     libpulseaudio
     libdrm
     mesa
-    nspr
+  nspr
     nss
     pango
     systemd
@@ -40,6 +32,8 @@ pkgs.mkShell {
     echo "npm version: $(npm --version)"
     echo "NW.js version: $(nw --version 2>/dev/null || echo 'nw command available')"
     echo ""
+    echo "Using SQLite WASM (node-sqlite3-wasm) - no native compilation needed!"
+    echo ""
     echo "Available commands:"
     echo "  npm install      - Install dependencies"
     echo "  npm run build    - Build the application"
@@ -50,8 +44,4 @@ pkgs.mkShell {
     # Set up npm to use local node_modules/.bin
     export PATH="$PWD/node_modules/.bin:$PATH"
   '';
-
-  # Environment variables for better-sqlite3 compilation
-  # This ensures it compiles against the correct Node.js version
-  PYTHON = "${pkgs.python3}/bin/python";
 }
