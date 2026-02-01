@@ -6,7 +6,7 @@ pkgs.mkShell {
     nodejs_22
 
     # NW.js runtime for running the desktop app
-    nwjs
+    nwjs-sdk
 
     # Additional libraries that NW.js needs on Linux
     alsa-lib
@@ -14,7 +14,7 @@ pkgs.mkShell {
     libpulseaudio
     libdrm
     mesa
-  nspr
+    nspr
     nss
     pango
     systemd
