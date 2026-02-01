@@ -20,7 +20,7 @@ declare const nw: any;
 
 // Parse command line arguments for database filename
 function getDatabaseFilename(): string {
-  const args = process.argv.slice(2); // Skip node and script path
+  const args = nw.App.argv.slice(2); // Skip node and script path
 
   for (const arg of args) {
     if (arg.startsWith('--db=')) {
