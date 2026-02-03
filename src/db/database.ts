@@ -1,22 +1,22 @@
 import { CalendarBlock } from '../store/types';
 
 export const PASTEL_COLORS = [
-  '#FFE5E5', // Pastel Pink
-  '#FFE5CC', // Pastel Peach
-  '#FFF4CC', // Pastel Yellow
-  '#E5FFCC', // Pastel Lime
-  '#CCFFE5', // Pastel Mint
-  '#CCFFFF', // Pastel Cyan
-  '#CCE5FF', // Pastel Sky Blue
-  '#E5CCFF', // Pastel Lavender
-  '#FFCCF2', // Pastel Magenta
-  '#FFD9E5', // Pastel Rose
-  '#FFE5D9', // Pastel Apricot
-  '#FFFACD', // Pastel Lemon
-  '#E0FFE0', // Pastel Green
-  '#E0F5FF', // Pastel Ice
-  '#F0E5FF', // Pastel Purple
-  '#E5E5E5', // Pastel Gray
+  '#E57373', // Coral Pink
+  '#FF8A65', // Peach
+  '#FFD54F', // Golden Yellow
+  '#AED581', // Lime Green
+  '#4DB6AC', // Teal/Mint
+  '#4DD0E1', // Cyan
+  '#64B5F6', // Sky Blue
+  '#9575CD', // Lavender
+  '#F06292', // Magenta
+  '#F48FB1', // Rose Pink
+  '#FFAB91', // Light Coral
+  '#FFF176', // Lemon Yellow
+  '#81C784', // Soft Green
+  '#4FC3F7', // Light Blue
+  '#BA68C8', // Purple
+  '#90A4AE', // Blue Gray
 ];
 
 export interface Category {
@@ -68,7 +68,7 @@ class BlocksDatabase {
       // Create default General category
       this.run(
         'INSERT INTO categories (name, color, sort_order) VALUES (?, ?, ?)',
-        ['General', '#E5E5E5', 0]
+        ['General', '#90A4AE', 0]
       );
       console.log('Created default "General" category');
     }

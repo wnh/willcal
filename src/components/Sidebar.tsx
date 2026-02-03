@@ -111,30 +111,37 @@ export function Sidebar({ onAddCategory, onEditCategory, onDeleteCategory }: Sid
               transition: 'transform 0.1s',
             }}
           >
-            <span style={{ fontWeight: 500 }}>{category.name}</span>
+            <span style={{ fontWeight: 500, color: 'white' }}>{category.name}</span>
             <div style={{ display: 'flex', gap: '4px' }}>
               <button
                 onClick={(e) => handleEditClick(category, e)}
                 style={{
-                  background: 'none',
+                  background: 'rgba(255, 255, 255, 0.3)',
                   border: 'none',
+                  borderRadius: '4px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  padding: '2px 4px',
+                  padding: '4px 8px',
+                  transition: 'background 0.2s',
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.5)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
               >
                 ✏️
               </button>
               <button
                 onClick={(e) => handleDeleteClick(category, e)}
                 style={{
-                  background: 'none',
+                  background: 'rgba(255, 255, 255, 0.3)',
                   border: 'none',
+                  borderRadius: '4px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  padding: '2px 4px',
-                  color: '#dc3545',
+                  padding: '4px 8px',
+                  transition: 'background 0.2s',
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.5)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
               >
                 🗑️
               </button>

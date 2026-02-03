@@ -436,7 +436,7 @@ function App() {
         )}
 
         {/* Calendar */}
-        <div style={{ flex: 1, padding: '16px', boxSizing: 'border-box' }}>
+        <div style={{ flex: 1, paddingTop: '16px', boxSizing: 'border-box' }}>
           <DnDCalendar
             localizer={localizer}
             events={blocks}
