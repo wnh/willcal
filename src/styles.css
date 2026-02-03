@@ -1,0 +1,7 @@
+/* Custom styles for WillCal */
+
+/* Style the "Now" indicator to be red and thicker */
+.rbc-current-time-indicator {
+  background-color: red !important;
+  height: 2px !important;
+}

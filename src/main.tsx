@@ -13,6 +13,7 @@ import fs from 'fs';
 import os from 'os';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+import './styles.css';
 import { store, RootState, AppDispatch } from './store/store';
 import { addBlock, deleteBlock, setDateRange, updateBlockTime, setCategories, addCategory, updateCategory, deleteCategory, toggleSidebar, updateBlockCategory } from './store/actions';
 import { CalendarBlock } from './store/types';
