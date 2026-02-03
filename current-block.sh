@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Determine database location
 if [ -n "$XDG_DATA_HOME" ]; then
