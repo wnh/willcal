@@ -82,6 +82,7 @@ function App() {
   const [showWorkHoursOnly, setShowWorkHoursOnly] = useState<boolean>(true);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [currentView, setCurrentView] = useState<string>('work_week');
 
   // Load categories on mount
   useEffect(() => {
@@ -170,8 +171,14 @@ function App() {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    return [...syntheticEvents, ...blocks];
-  }, [blocks, dateRange, categories]);
+    // In month view, only show synthetic events (totals only)
+    // In other views, show both synthetic events and blocks
+    if (currentView === 'month') {
+      return syntheticEvents;
+    } else {
+      return [...syntheticEvents, ...blocks];
+    }
+  }, [blocks, dateRange, categories, currentView]);
 
   const handleRangeChange = (range: Date[] | { start: Date; end: Date }) => {
     let start: Date;
@@ -550,6 +557,7 @@ function App() {
             onSelectSlot={handleSelectSlot}
             onSelectEvent={handleSelectBlock}
             onRangeChange={handleRangeChange}
+            onView={(view) => setCurrentView(view)}
             onEventDrop={handleBlockDrop}
             onEventResize={handleBlockResize}
             eventPropGetter={eventStyleGetter}
