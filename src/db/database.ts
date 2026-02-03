@@ -25,6 +25,7 @@ export interface Category {
   name: string;
   color: string;
   sortOrder: number;
+  includeInTotals: boolean;
 }
 
 class BlocksDatabase {
@@ -121,17 +122,18 @@ class BlocksDatabase {
       name: row.name,
       color: row.color,
       sortOrder: row.sort_order,
+      includeInTotals: row.include_in_totals === 1,
     }));
   }
 
-  addCategory(name: string, color: string): Category {
+  addCategory(name: string, color: string, includeInTotals: boolean = true): Category {
     // Get max sort_order
     const maxOrder = this.all('SELECT MAX(sort_order) as max FROM categories');
     const sortOrder = (maxOrder[0]?.max ?? -1) + 1;
 
     this.run(
-      'INSERT INTO categories (name, color, sort_order) VALUES (?, ?, ?)',
-      [name, color, sortOrder]
+      'INSERT INTO categories (name, color, sort_order, include_in_totals) VALUES (?, ?, ?, ?)',
+      [name, color, sortOrder, includeInTotals ? 1 : 0]
     );
 
     // Get the newly created category
@@ -143,15 +145,19 @@ class BlocksDatabase {
       name: row.name,
       color: row.color,
       sortOrder: row.sort_order,
+      includeInTotals: row.include_in_totals === 1,
     };
   }
 
-  updateCategory(id: number, updates: { name?: string; color?: string }): void {
+  updateCategory(id: number, updates: { name?: string; color?: string; includeInTotals?: boolean }): void {
     if (updates.name !== undefined) {
       this.run('UPDATE categories SET name = ? WHERE id = ?', [updates.name, id]);
     }
     if (updates.color !== undefined) {
       this.run('UPDATE categories SET color = ? WHERE id = ?', [updates.color, id]);
+    }
+    if (updates.includeInTotals !== undefined) {
+      this.run('UPDATE categories SET include_in_totals = ? WHERE id = ?', [updates.includeInTotals ? 1 : 0, id]);
     }
   }
 

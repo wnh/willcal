@@ -53,6 +53,13 @@ export const migrations: Migration[] = [
       }
     }
   },
+  {
+    version: 3,
+    description: 'Add include_in_totals column to categories table',
+    up: (db: any) => {
+      db.run('ALTER TABLE categories ADD COLUMN include_in_totals INTEGER NOT NULL DEFAULT 1');
+    }
+  },
   // Future migrations go here...
 ];
 

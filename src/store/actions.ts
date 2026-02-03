@@ -34,9 +34,9 @@ export function setCategories(categories: Category[]): SetCategoriesAction {
   };
 }
 
-export function addCategory(name: string, color: string): AddCategoryAction {
+export function addCategory(name: string, color: string, includeInTotals: boolean = true): AddCategoryAction {
   const db = getDatabase();
-  const category = db.addCategory(name, color);
+  const category = db.addCategory(name, color, includeInTotals);
 
   return {
     type: ADD_CATEGORY,
@@ -44,7 +44,7 @@ export function addCategory(name: string, color: string): AddCategoryAction {
   };
 }
 
-export function updateCategory(id: number, updates: { name?: string; color?: string }): UpdateCategoryAction {
+export function updateCategory(id: number, updates: { name?: string; color?: string; includeInTotals?: boolean }): UpdateCategoryAction {
   const db = getDatabase();
   db.updateCategory(id, updates);
 

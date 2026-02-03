@@ -140,11 +140,11 @@ function App() {
         }
       });
 
-      // Create one synthetic all-day event per category
+      // Create one synthetic all-day event per category (only if includeInTotals is true)
       let totalHours = 0;
       Array.from(categoryHours.entries()).forEach(([categoryId, hours]) => {
         const category = categories.find(c => c.id === categoryId);
-        if (category) {
+        if (category && category.includeInTotals) {
           totalHours += hours;
           syntheticEvents.push({
             id: -1 * (dayStart.getTime() + categoryId), // Unique negative ID
@@ -208,18 +208,30 @@ function App() {
   };
 
   const handleEditCategoryClick = (category: Category) => {
-    setEditingCategory(category);
+    // Reload categories from DB to get fresh data
+    const db = getDatabase();
+    const freshCategories = db.getAllCategories();
+    dispatch(setCategories(freshCategories));
+
+    // Find the fresh category data
+    const freshCategory = freshCategories.find(c => c.id === category.id);
+    setEditingCategory(freshCategory || category);
     setShowCategoryDialog(true);
   };
 
-  const handleSaveCategory = (name: string, color: string) => {
+  const handleSaveCategory = (name: string, color: string, includeInTotals: boolean) => {
     try {
       if (editingCategory) {
-        dispatch(updateCategory(editingCategory.id, { name, color }));
+        dispatch(updateCategory(editingCategory.id, { name, color, includeInTotals }));
       } else {
-        dispatch(addCategory(name, color));
+        dispatch(addCategory(name, color, includeInTotals));
       }
       setShowCategoryDialog(false);
+
+      // Reload categories from DB to ensure Redux state is fresh
+      const db = getDatabase();
+      const freshCategories = db.getAllCategories();
+      dispatch(setCategories(freshCategories));
     } catch (error: any) {
       // Provide user-friendly error for duplicate names
       if (error.message && error.message.includes('UNIQUE')) {

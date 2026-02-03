@@ -3,18 +3,19 @@ import { Category, PASTEL_COLORS } from '../db/database';
 
 interface CategoryDialogProps {
   category?: Category; // undefined for new, defined for edit
-  onSave: (name: string, color: string) => void;
+  onSave: (name: string, color: string, includeInTotals: boolean) => void;
   onCancel: () => void;
 }
 
 export function CategoryDialog({ category, onSave, onCancel }: CategoryDialogProps) {
   const [name, setName] = useState(category?.name || '');
   const [color, setColor] = useState(category?.color || PASTEL_COLORS[0]);
+  const [includeInTotals, setIncludeInTotals] = useState(category?.includeInTotals ?? true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
-      onSave(name.trim(), color);
+      onSave(name.trim(), color, includeInTotals);
     }
   };
 
@@ -75,7 +76,7 @@ export function CategoryDialog({ category, onSave, onCancel }: CategoryDialogPro
             />
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
               Color
             </label>
@@ -101,6 +102,23 @@ export function CategoryDialog({ category, onSave, onCancel }: CategoryDialogPro
                 />
               ))}
             </div>
+          </div>
+
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}>
+              <input
+                type="checkbox"
+                checked={includeInTotals}
+                onChange={(e) => setIncludeInTotals(e.target.checked)}
+                style={{
+                  marginRight: '8px',
+                  width: '16px',
+                  height: '16px',
+                  cursor: 'pointer',
+                }}
+              />
+              <span style={{ fontSize: '14px' }}>Include in daily totals</span>
+            </label>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>

@@ -79,6 +79,7 @@
 - [ ] Verify name input field is autofocused
 - [ ] Verify 16 pastel color grid appears (8 columns × 2 rows)
 - [ ] Click on different colors and verify blue border indicates selection
+- [ ] Verify "Include in daily totals" checkbox is present and checked by default
 - [ ] Leave name empty and verify "Create" button is disabled
 - [ ] Enter name "Work" and select a blue color
 - [ ] Click "Create"
@@ -91,6 +92,7 @@
 - [ ] Verify "Edit Category" dialog appears
 - [ ] Verify name field shows "Work"
 - [ ] Verify current color is selected (blue border)
+- [ ] Verify "Include in daily totals" checkbox reflects current setting
 - [ ] Change name to "Work Projects"
 - [ ] Change color to green pastel
 - [ ] Click "Save"
@@ -197,6 +199,7 @@
 - [ ] Verify the day header for Monday displays category hour totals:
   - [ ] Should show "Work: 5.0h" badge with Work category's color
   - [ ] Should show "Personal: 1.5h" badge with Personal category's color
+  - [ ] Should show "Total: 6.5h" badge
   - [ ] Badges should be displayed horizontally with small gaps between them
 - [ ] Create blocks on Tuesday with a single category
   - [ ] Create two 1-hour blocks assigned to "Work"
@@ -212,6 +215,25 @@
 - [ ] Verify Wednesday's totals update (increase)
 - [ ] Change a block's category via right-click menu
 - [ ] Verify the day's category hour totals update immediately
+
+### Include in Totals Feature
+- [ ] Create a new category "Break" with a color
+- [ ] Leave "Include in daily totals" checked
+- [ ] Create a 1-hour block on Monday assigned to "Break"
+- [ ] Verify Monday's totals include "Break: 1.0h"
+- [ ] Verify the Total includes the Break hour
+- [ ] Edit "Break" category and uncheck "Include in daily totals"
+- [ ] Click "Save"
+- [ ] Verify "Break: 1.0h" badge disappears from Monday's header
+- [ ] Verify Total decreases by 1.0h (excluding Break time)
+- [ ] Verify the Break block is still visible on the calendar
+- [ ] Edit "Break" category and re-check "Include in daily totals"
+- [ ] Verify "Break: 1.0h" badge reappears
+- [ ] Verify Total increases again
+- [ ] Create multiple categories, some with includeInTotals=true and some false
+- [ ] Create blocks for each category
+- [ ] Verify only categories with includeInTotals=true appear in daily totals
+- [ ] Restart app and verify settings persist
 
 ## Console Logging (Development)
 - [ ] Open DevTools console
@@ -235,20 +257,30 @@
 - [ ] Create a block and verify it's assigned to "General" category
 
 ### Existing Database (Up to Date)
-- [ ] Start app with existing v2 database (pre-migration system)
-- [ ] Verify console shows "Current schema version: 2"
+- [ ] Start app with existing v3 database (current version)
+- [ ] Verify console shows "Current schema version: 3"
 - [ ] Verify console shows "Schema is up to date. No migrations needed."
 - [ ] Verify no backup created
 - [ ] Verify all existing blocks and categories are present
 - [ ] Verify app functions normally
 
-### Future Migration (v3+)
-- [ ] When new migration is added to codebase, start app
+### Migration to v3 (include_in_totals)
+- [ ] Start app with existing v2 database (before include_in_totals feature)
+- [ ] Verify console shows "Current schema version: 2"
+- [ ] Verify console shows "Running migration 3: Add include_in_totals column to categories table"
 - [ ] Verify backup created: `~/.local/share/willcal/backups/willcal.db.backup.YYYYMMDD_HHMMSS.before_v3`
-- [ ] Verify new migration runs successfully
 - [ ] Verify console shows "✓ Migration 3 completed successfully"
+- [ ] Verify console shows "=== All migrations completed successfully ==="
+- [ ] Open all existing categories in edit dialog
+- [ ] Verify "Include in daily totals" checkbox is checked (default for existing categories)
+- [ ] Verify daily totals continue to work as before migration
+- [ ] Query database: `SELECT * FROM schema_version` should show versions 1, 2, and 3
+
+### Future Migration (v4+)
+- [ ] When new migration is added to codebase, start app
+- [ ] Verify backup created with appropriate version number
+- [ ] Verify new migration runs successfully
 - [ ] Check `schema_version` table updated with new version
-- [ ] Query: `SELECT * FROM schema_version` should show versions 1, 2, and 3
 - [ ] Create 6+ migrations over time and verify old backups are deleted (keeps last 5)
 
 ### Migration Failure Recovery
