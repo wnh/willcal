@@ -7,6 +7,7 @@ pkgs.mkShell {
 
     # NW.js runtime for running the desktop app
     nwjs-sdk
+    sqlite
 
     # Additional libraries that NW.js needs on Linux
     alsa-lib

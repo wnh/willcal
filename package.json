@@ -5,6 +5,7 @@
   "scripts": {
     "build": "node esbuild.config.js",
     "start": "npm run build && nw .",
+    "local": "npm run build && nw --auto-open-devtools-for-tabs . -- --db=./dev.db",
     "dev": "npm run build && nw --auto-open-devtools-for-tabs . -- --db=:memory:"
   },
   "dependencies": {
