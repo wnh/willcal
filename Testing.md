@@ -64,6 +64,118 @@
 - [ ] Verify calendar returns to 6:00 AM - 6:00 PM range
 - [ ] Create blocks during work hours, toggle checkbox, verify blocks still display correctly
 
+## Category Management
+
+### Category Sidebar
+- [ ] Verify sidebar appears on the left with "Categories" header
+- [ ] Verify "General" category exists by default (gray color #E5E5E5)
+- [ ] Verify "+" button appears in sidebar header
+- [ ] Verify each category shows its name and colored background
+- [ ] Verify edit button (✏️) and delete button (🗑️) appear on each category
+
+### Category Creation
+- [ ] Click "+" button in sidebar
+- [ ] Verify "New Category" dialog appears with backdrop
+- [ ] Verify name input field is autofocused
+- [ ] Verify 16 pastel color grid appears (8 columns × 2 rows)
+- [ ] Click on different colors and verify blue border indicates selection
+- [ ] Leave name empty and verify "Create" button is disabled
+- [ ] Enter name "Work" and select a blue color
+- [ ] Click "Create"
+- [ ] Verify category appears in sidebar with blue background
+- [ ] Verify dialog closes
+- [ ] Restart app and verify "Work" category persists
+
+### Category Editing
+- [ ] Click edit button (✏️) on "Work" category
+- [ ] Verify "Edit Category" dialog appears
+- [ ] Verify name field shows "Work"
+- [ ] Verify current color is selected (blue border)
+- [ ] Change name to "Work Projects"
+- [ ] Change color to green pastel
+- [ ] Click "Save"
+- [ ] Verify category name and color update in sidebar
+- [ ] Create a block assigned to "Work Projects"
+- [ ] Edit the category color again to pink
+- [ ] Verify the block's background color changes to pink
+- [ ] Verify changes persist after restart
+
+### Category Deletion
+- [ ] Create a new category "Temporary"
+- [ ] Verify it appears in sidebar
+- [ ] Click delete button (🗑️) on "Temporary"
+- [ ] Verify confirmation dialog appears
+- [ ] Confirm deletion
+- [ ] Verify category is removed from sidebar
+- [ ] Create a block and assign it to "Work Projects"
+- [ ] Try to delete "Work Projects" category
+- [ ] Verify error message: "Cannot delete category: 1 block(s) are using this category"
+- [ ] Delete the block
+- [ ] Now delete "Work Projects" - should succeed
+- [ ] Try to delete the last remaining category
+- [ ] Verify error: "Cannot delete the last category. You must have at least one category."
+
+### Category Reordering (Drag & Drop)
+- [ ] Create 3 categories: "A", "B", "C"
+- [ ] Verify they appear in sidebar in order: General, A, B, C
+- [ ] Drag category "C" to the top position
+- [ ] Verify order changes to: C, General, A, B
+- [ ] Restart app and verify order persists
+- [ ] Create a new block
+- [ ] Verify it's assigned to "C" (first category in list)
+- [ ] Drag "General" back to top position
+- [ ] Create another new block
+- [ ] Verify it's assigned to "General" (now first in list)
+
+### Block Category Assignment
+- [ ] Create a new block (click or drag on calendar)
+- [ ] Verify block automatically enters edit mode
+- [ ] Enter a title and save
+- [ ] Verify block has the color of the first category in sidebar
+- [ ] Right-click on the block
+- [ ] Verify "Category" submenu appears
+- [ ] Verify all categories are listed with checkmarks
+- [ ] Verify current category has a checkmark
+- [ ] Select a different category from the menu
+- [ ] Verify block color changes immediately
+- [ ] Verify change persists after restart
+
+### Category Colors on Calendar
+- [ ] Create multiple categories with different pastel colors
+- [ ] Create blocks assigned to each category
+- [ ] Verify each block displays with its category's background color
+- [ ] Verify block titles are readable on pastel backgrounds
+- [ ] Switch to month view and verify colors display correctly
+- [ ] Switch to week view and verify colors display correctly
+- [ ] Switch to agenda view and verify colors display correctly
+
+### Sidebar Toggle
+- [ ] Click "☰ Hide Categories" button in header
+- [ ] Verify sidebar disappears
+- [ ] Verify calendar expands to full width
+- [ ] Verify button text changes to "☰ Show Categories"
+- [ ] Click "☰ Show Categories"
+- [ ] Verify sidebar reappears
+- [ ] Verify calendar shrinks to make room for sidebar
+- [ ] Restart app
+- [ ] Verify sidebar is visible by default (collapsed state does not persist)
+
+### Duplicate Category Names
+- [ ] Create a category named "Test"
+- [ ] Try to create another category also named "Test"
+- [ ] Verify error message: "A category named 'Test' already exists. Please choose a different name."
+- [ ] Verify dialog remains open
+- [ ] Change name to "Test 2" and save
+- [ ] Verify new category is created successfully
+
+### Category Migration (First-Time Users)
+- [ ] Use a fresh database (or delete existing one)
+- [ ] Launch app for first time
+- [ ] Verify "General" category is created automatically
+- [ ] Verify any existing blocks are assigned to "General"
+- [ ] Verify database has both `blocks` and `categories` tables
+- [ ] Verify `blocks` table has `category_id` column
+
 ## Database Persistence
 - [ ] Create several blocks and close the application
 - [ ] Restart the application

@@ -1,5 +1,31 @@
 import { CalendarBlock } from '../store/types';
 
+export const PASTEL_COLORS = [
+  '#FFE5E5', // Pastel Pink
+  '#FFE5CC', // Pastel Peach
+  '#FFF4CC', // Pastel Yellow
+  '#E5FFCC', // Pastel Lime
+  '#CCFFE5', // Pastel Mint
+  '#CCFFFF', // Pastel Cyan
+  '#CCE5FF', // Pastel Sky Blue
+  '#E5CCFF', // Pastel Lavender
+  '#FFCCF2', // Pastel Magenta
+  '#FFD9E5', // Pastel Rose
+  '#FFE5D9', // Pastel Apricot
+  '#FFFACD', // Pastel Lemon
+  '#E0FFE0', // Pastel Green
+  '#E0F5FF', // Pastel Ice
+  '#F0E5FF', // Pastel Purple
+  '#E5E5E5', // Pastel Gray
+];
+
+export interface Category {
+  id: number;
+  name: string;
+  color: string;
+  sortOrder: number;
+}
+
 class BlocksDatabase {
   private db: any;
 
@@ -19,11 +45,81 @@ class BlocksDatabase {
     return rows;
   }
 
-  addBlock(block: CalendarBlock): void {
-    this.run(
-      'INSERT INTO blocks (id, title, start, end) VALUES (?, ?, ?, ?)',
-      [block.id, block.title, block.start.toISOString(), block.end.toISOString()]
+  private initializeTables(): void {
+    console.log('Initializing database tables...');
+
+    // Check if categories table exists
+    const tableExists = this.all(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='categories'"
     );
+
+    if (tableExists.length === 0) {
+      console.log('Categories table does not exist - creating it...');
+      // Categories table doesn't exist - first time setup
+      this.run(`
+        CREATE TABLE categories (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL UNIQUE,
+          color TEXT NOT NULL,
+          sort_order INTEGER NOT NULL
+        )
+      `);
+
+      // Create default General category
+      this.run(
+        'INSERT INTO categories (name, color, sort_order) VALUES (?, ?, ?)',
+        ['General', '#E5E5E5', 0]
+      );
+      console.log('Created default "General" category');
+    }
+
+    // Check if blocks table has category_id column
+    const columnsResult = this.all("PRAGMA table_info(blocks)");
+    const hasCategoryId = columnsResult.some((col: any) => col.name === 'category_id');
+
+    if (!hasCategoryId) {
+      console.log('Blocks table missing category_id - migrating...');
+      // Migrate blocks table to add category_id
+      this.run(`
+        CREATE TABLE blocks_new (
+          id INTEGER PRIMARY KEY,
+          title TEXT NOT NULL,
+          start TEXT NOT NULL,
+          end TEXT NOT NULL,
+          category_id INTEGER,
+          FOREIGN KEY (category_id) REFERENCES categories(id)
+        )
+      `);
+
+      this.run('INSERT INTO blocks_new (id, title, start, end) SELECT id, title, start, end FROM blocks');
+      this.run('DROP TABLE blocks');
+      this.run('ALTER TABLE blocks_new RENAME TO blocks');
+
+      // Update all blocks to use General category
+      const generalCategory = this.all("SELECT id FROM categories WHERE name = 'General' LIMIT 1");
+      if (generalCategory.length > 0) {
+        this.run('UPDATE blocks SET category_id = ? WHERE category_id IS NULL', [generalCategory[0].id]);
+        console.log('Assigned all existing blocks to "General" category');
+      }
+    }
+
+    console.log('Database initialization complete');
+  }
+
+  addBlock(block: CalendarBlock): void {
+    // Support both old format (no categoryId) and new format (with categoryId)
+    const categoryId = (block as any).categoryId;
+    if (categoryId !== undefined) {
+      this.run(
+        'INSERT INTO blocks (id, title, start, end, category_id) VALUES (?, ?, ?, ?, ?)',
+        [block.id, block.title, block.start.toISOString(), block.end.toISOString(), categoryId]
+      );
+    } else {
+      this.run(
+        'INSERT INTO blocks (id, title, start, end) VALUES (?, ?, ?, ?)',
+        [block.id, block.title, block.start.toISOString(), block.end.toISOString()]
+      );
+    }
   }
 
   deleteBlock(id: number): void {
@@ -61,12 +157,95 @@ class BlocksDatabase {
       [end.toISOString(), start.toISOString()]
     );
 
+    return rows.map((row: any) => {
+      const block: any = {
+        id: row.id,
+        title: row.title,
+        start: new Date(row.start),
+        end: new Date(row.end),
+      };
+      // Include categoryId if it exists
+      if (row.category_id !== undefined && row.category_id !== null) {
+        block.categoryId = row.category_id;
+      }
+      return block;
+    });
+  }
+
+  // CATEGORY CRUD METHODS
+  getAllCategories(): Category[] {
+    const rows = this.all('SELECT * FROM categories ORDER BY sort_order ASC');
     return rows.map((row: any) => ({
       id: row.id,
-      title: row.title,
-      start: new Date(row.start),
-      end: new Date(row.end),
+      name: row.name,
+      color: row.color,
+      sortOrder: row.sort_order,
     }));
+  }
+
+  addCategory(name: string, color: string): Category {
+    // Get max sort_order
+    const maxOrder = this.all('SELECT MAX(sort_order) as max FROM categories');
+    const sortOrder = (maxOrder[0]?.max ?? -1) + 1;
+
+    this.run(
+      'INSERT INTO categories (name, color, sort_order) VALUES (?, ?, ?)',
+      [name, color, sortOrder]
+    );
+
+    // Get the newly created category
+    const rows = this.all('SELECT * FROM categories WHERE name = ?', [name]);
+    const row = rows[0];
+
+    return {
+      id: row.id,
+      name: row.name,
+      color: row.color,
+      sortOrder: row.sort_order,
+    };
+  }
+
+  updateCategory(id: number, updates: { name?: string; color?: string }): void {
+    if (updates.name !== undefined) {
+      this.run('UPDATE categories SET name = ? WHERE id = ?', [updates.name, id]);
+    }
+    if (updates.color !== undefined) {
+      this.run('UPDATE categories SET color = ? WHERE id = ?', [updates.color, id]);
+    }
+  }
+
+  deleteCategory(id: number): void {
+    // Check if any blocks use this category
+    const blocks = this.all('SELECT COUNT(*) as count FROM blocks WHERE category_id = ?', [id]);
+    if (blocks[0].count > 0) {
+      throw new Error(`Cannot delete category: ${blocks[0].count} block(s) are using this category`);
+    }
+
+    this.run('DELETE FROM categories WHERE id = ?', [id]);
+  }
+
+  updateCategorySortOrder(categories: Category[]): void {
+    categories.forEach((category, index) => {
+      this.run(
+        'UPDATE categories SET sort_order = ? WHERE id = ?',
+        [index, category.id]
+      );
+    });
+  }
+
+  getBlockCountByCategory(categoryId: number): number {
+    const rows = this.all(
+      'SELECT COUNT(*) as count FROM blocks WHERE category_id = ?',
+      [categoryId]
+    );
+    return rows[0].count;
+  }
+
+  updateBlockCategory(blockId: number, categoryId: number): void {
+    this.run(
+      'UPDATE blocks SET category_id = ? WHERE id = ?',
+      [categoryId, blockId]
+    );
   }
 
   close(): void {
@@ -82,6 +261,7 @@ export function openDatabase(filename: string): BlocksDatabase {
   const { Database } = require('node-sqlite3-wasm');
   const db = new Database(filename);
 
+  // Create blocks table if it doesn't exist (for brand new databases)
   db.exec(`
     CREATE TABLE IF NOT EXISTS blocks (
       id INTEGER PRIMARY KEY,
@@ -91,9 +271,13 @@ export function openDatabase(filename: string): BlocksDatabase {
     );
   `);
 
+  dbInstance = new BlocksDatabase(db);
+
+  // Initialize/migrate tables
+  dbInstance['initializeTables']();
+
   console.log('Database opened');
 
-  dbInstance = new BlocksDatabase(db);
   return dbInstance;
 }
 

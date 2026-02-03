@@ -14,9 +14,11 @@ import os from 'os';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { store, RootState, AppDispatch } from './store/store';
-import { addBlock, deleteBlock, setDateRange, updateBlockTime } from './store/actions';
+import { addBlock, deleteBlock, setDateRange, updateBlockTime, setCategories, addCategory, updateCategory, deleteCategory, toggleSidebar, updateBlockCategory } from './store/actions';
 import { CalendarBlock } from './store/types';
-import { openDatabase, getDatabase } from './db/database';
+import { openDatabase, getDatabase, Category } from './db/database';
+import { Sidebar } from './components/Sidebar';
+import { CategoryDialog } from './components/CategoryDialog';
 
 declare const nw: any;
 
@@ -73,9 +75,20 @@ interface BlockWrapperProps {
 function App() {
   const dispatch = useDispatch<AppDispatch>();
   const dateRange = useSelector((state: RootState) => state.dateRange);
+  const categories = useSelector((state: RootState) => state.categories);
+  const sidebarCollapsed = useSelector((state: RootState) => state.sidebarCollapsed);
   const [editingBlockId, setEditingBlockId] = useState<number | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [showWorkHoursOnly, setShowWorkHoursOnly] = useState<boolean>(true);
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
+  // Load categories on mount
+  useEffect(() => {
+    const db = getDatabase();
+    const categories = db.getAllCategories();
+    dispatch(setCategories(categories));
+  }, [dispatch]);
 
   // Set initial date range for the week view
   useEffect(() => {
@@ -121,12 +134,89 @@ function App() {
     }
   };
 
+  // Category dialog handlers
+  const handleAddCategoryClick = () => {
+    setEditingCategory(null);
+    setShowCategoryDialog(true);
+  };
+
+  const handleEditCategoryClick = (category: Category) => {
+    setEditingCategory(category);
+    setShowCategoryDialog(true);
+  };
+
+  const handleSaveCategory = (name: string, color: string) => {
+    try {
+      if (editingCategory) {
+        dispatch(updateCategory(editingCategory.id, { name, color }));
+      } else {
+        dispatch(addCategory(name, color));
+      }
+      setShowCategoryDialog(false);
+    } catch (error: any) {
+      // Provide user-friendly error for duplicate names
+      if (error.message && error.message.includes('UNIQUE')) {
+        alert(`A category named "${name}" already exists. Please choose a different name.`);
+      } else {
+        alert(error.message || 'An error occurred while saving the category.');
+      }
+    }
+  };
+
+  const handleDeleteCategory = (categoryId: number) => {
+    // Prevent deletion of last category
+    if (categories.length <= 1) {
+      alert('Cannot delete the last category. You must have at least one category.');
+      return;
+    }
+
+    const db = getDatabase();
+    const blockCount = db.getBlockCountByCategory(categoryId);
+
+    if (blockCount > 0) {
+      alert(`Cannot delete category: ${blockCount} block(s) are using this category`);
+      return;
+    }
+
+    if (confirm('Are you sure you want to delete this category?')) {
+      try {
+        dispatch(deleteCategory(categoryId));
+      } catch (error: any) {
+        alert(error.message);
+      }
+    }
+  };
+
   function BlockWrapper({ event: block, children }: BlockWrapperProps) {
     const handleContextMenu = (e: React.MouseEvent) => {
       e.preventDefault();
       console.log('Right click on block:', block);
 
       const menu = new nw.Menu();
+
+      // Add category submenu
+      const categoryMenu = new nw.Menu();
+      categories.forEach(category => {
+        categoryMenu.append(new nw.MenuItem({
+          label: category.name,
+          type: 'checkbox',
+          checked: block.categoryId === category.id,
+          click: () => {
+            updateBlockCategory(block.id, category.id);
+            if (dateRange) {
+              dispatch(setDateRange(dateRange.start, dateRange.end));
+            }
+          }
+        }));
+      });
+
+      menu.append(new nw.MenuItem({
+        label: 'Category',
+        submenu: categoryMenu
+      }));
+
+      menu.append(new nw.MenuItem({ type: 'separator' }));
+
       menu.append(new nw.MenuItem({
         label: 'Delete',
         click: () => {
@@ -240,11 +330,18 @@ function App() {
   }
 
   const handleSelectSlot = (slotInfo: SlotInfo) => {
+    const firstCategory = categories[0];
+    if (!firstCategory) {
+      alert('Please create a category first');
+      return;
+    }
+
     const newBlock: CalendarBlock = {
       id: Date.now(),
       title: '',
       start: slotInfo.start,
       end: slotInfo.end,
+      categoryId: firstCategory.id,
     };
     addBlock(newBlock);
     // Enter edit mode for the new block
@@ -283,9 +380,40 @@ function App() {
     }
   };
 
+  // Apply category colors to blocks
+  const eventStyleGetter = (event: CalendarBlock) => {
+    const category = categories.find(c => c.id === event.categoryId);
+    return {
+      style: {
+        backgroundColor: category?.color || '#E5E5E5',
+      }
+    };
+  };
+
   return (
-    <div style={{ height: '100vh', padding: '16px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Header with toggle button and work hours checkbox */}
+      <div style={{
+        padding: '12px 16px',
+        borderBottom: '1px solid #ddd',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+      }}>
+        <button
+          onClick={() => dispatch(toggleSidebar())}
+          style={{
+            background: 'none',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            padding: '6px 12px',
+            cursor: 'pointer',
+            fontSize: '14px',
+          }}
+        >
+          {sidebarCollapsed ? '☰ Show Categories' : '☰ Hide Categories'}
+        </button>
+
         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
           <input
             type="checkbox"
@@ -295,29 +423,53 @@ function App() {
           <span>Work hours only (6:00 AM - 6:00 PM)</span>
         </label>
       </div>
-      <div style={{ flex: 1, minHeight: 0 }}>
-        <DnDCalendar
-          localizer={localizer}
-          events={blocks}
-          defaultView="work_week"
-          views={['month', 'week', 'work_week', 'day', 'agenda']}
-          selectable
-          step={15}
-          timeslots={4}
-          min={showWorkHoursOnly ? new Date(1970, 0, 1, 6, 0, 0) : undefined}
-          max={showWorkHoursOnly ? new Date(1970, 0, 1, 18, 0, 0) : undefined}
-          onSelectSlot={handleSelectSlot}
-          onSelectEvent={handleSelectBlock}
-          onRangeChange={handleRangeChange}
-          onEventDrop={handleBlockDrop}
-          onEventResize={handleBlockResize}
-          components={{
-            eventWrapper: BlockWrapper,
-            event: CustomBlockEvent,
-          }}
-          style={{ height: '100%' }}
-        />
+
+      {/* Main content area */}
+      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        {/* Sidebar */}
+        {!sidebarCollapsed && (
+          <Sidebar
+            onAddCategory={handleAddCategoryClick}
+            onEditCategory={handleEditCategoryClick}
+            onDeleteCategory={handleDeleteCategory}
+          />
+        )}
+
+        {/* Calendar */}
+        <div style={{ flex: 1, padding: '16px', boxSizing: 'border-box' }}>
+          <DnDCalendar
+            localizer={localizer}
+            events={blocks}
+            defaultView="work_week"
+            views={['month', 'week', 'work_week', 'day', 'agenda']}
+            selectable
+            step={15}
+            timeslots={4}
+            min={showWorkHoursOnly ? new Date(1970, 0, 1, 6, 0, 0) : undefined}
+            max={showWorkHoursOnly ? new Date(1970, 0, 1, 18, 0, 0) : undefined}
+            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectBlock}
+            onRangeChange={handleRangeChange}
+            onEventDrop={handleBlockDrop}
+            onEventResize={handleBlockResize}
+            eventPropGetter={eventStyleGetter}
+            components={{
+              eventWrapper: BlockWrapper,
+              event: CustomBlockEvent,
+            }}
+            style={{ height: '100%' }}
+          />
+        </div>
       </div>
+
+      {/* Category Dialog */}
+      {showCategoryDialog && (
+        <CategoryDialog
+          category={editingCategory || undefined}
+          onSave={handleSaveCategory}
+          onCancel={() => setShowCategoryDialog(false)}
+        />
+      )}
     </div>
   );
 }
