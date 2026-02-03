@@ -37,6 +37,13 @@ class BlocksDatabase {
     );
   }
 
+  updateBlockTitle(id: number, title: string): void {
+    this.run(
+      'UPDATE blocks SET title = ? WHERE id = ?',
+      [title, id]
+    );
+  }
+
   getAllBlocks(): CalendarBlock[] {
     const rows = this.all('SELECT * FROM blocks');
 

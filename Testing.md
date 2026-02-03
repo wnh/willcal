@@ -2,15 +2,36 @@
 
 ## Block Creation
 - [ ] Click on an empty time slot to create a new block
+- [ ] Verify new block immediately enters edit mode with an empty input field
+- [ ] Type a title (e.g., "Team Meeting") and press Enter to save
+- [ ] Verify block is created with the entered title
 - [ ] Click and drag to create a block spanning multiple time slots
-- [ ] Verify new block appears with title "New Block"
-- [ ] Verify block is saved to database (persists after restart)
+- [ ] Verify new block enters edit mode automatically
+- [ ] Enter a title and save, verify block is saved to database (persists after restart)
+- [ ] Create a new block, then press Escape without entering a title
+- [ ] Verify the block is deleted (canceled creation)
+- [ ] Create a new block, leave the title empty, and press Enter
+- [ ] Verify the block is saved with title "Untitled"
 
 ## Block Deletion
 - [ ] Right-click on a block to open context menu
 - [ ] Click "Delete" option in context menu
 - [ ] Verify block is removed from calendar
 - [ ] Verify block is deleted from database (stays deleted after restart)
+
+## Block Editing (Inline Title Editing)
+- [ ] Hover over a block and verify a pencil emoji (✏️) button appears
+- [ ] Click the pencil button to enter edit mode
+- [ ] Verify title text becomes an editable input field
+- [ ] Type a new title (e.g., "Meeting with Team")
+- [ ] Press Enter to save the changes
+- [ ] Verify the title updates on the calendar
+- [ ] Verify the new title is saved to database (persists after restart)
+- [ ] Click the pencil button on another block to edit
+- [ ] Press Escape to cancel editing without saving
+- [ ] Verify the original title remains unchanged
+- [ ] Click a block's pencil button, change the title, then click outside the input
+- [ ] Verify the title saves automatically on blur
 
 ## Block Movement (Drag & Drop)
 - [ ] Click and drag a block to a different time slot

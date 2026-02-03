@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { Calendar, dateFnsLocalizer, SlotInfo } from 'react-big-calendar';
@@ -73,6 +73,8 @@ interface BlockWrapperProps {
 function App() {
   const dispatch = useDispatch<AppDispatch>();
   const dateRange = useSelector((state: RootState) => state.dateRange);
+  const [editingBlockId, setEditingBlockId] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState<string>('');
 
   // Set initial date range for the week view
   useEffect(() => {
@@ -142,14 +144,107 @@ function App() {
     );
   }
 
+  function CustomBlockEvent({ event: block }: { event: CalendarBlock }) {
+    const isEditing = editingBlockId === block.id;
+
+    const handleEditClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setEditingBlockId(block.id);
+      setEditingTitle(block.title);
+    };
+
+    const handleSave = () => {
+      const finalTitle = editingTitle.trim() !== '' ? editingTitle.trim() : 'Untitled';
+      const db = getDatabase();
+      db.updateBlockTitle(block.id, finalTitle);
+
+      // Re-trigger render by updating the date range (same range)
+      if (dateRange) {
+        dispatch(setDateRange(dateRange.start, dateRange.end));
+      }
+      setEditingBlockId(null);
+      setEditingTitle('');
+    };
+
+    const handleCancel = () => {
+      // If canceling a new block with empty title, delete it
+      if (block.title === '' && editingTitle.trim() === '') {
+        handleDeleteBlock(block.id);
+      }
+      setEditingBlockId(null);
+      setEditingTitle('');
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleCancel();
+      }
+    };
+
+    if (isEditing) {
+      return (
+        <input
+          type="text"
+          value={editingTitle}
+          onChange={(e) => setEditingTitle(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          autoFocus
+          style={{
+            width: '100%',
+            border: 'none',
+            background: 'transparent',
+            color: 'inherit',
+            font: 'inherit',
+            padding: 0,
+            outline: 'none',
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        />
+      );
+    }
+
+    return (
+      <div style={{ height: '100%', display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <span style={{ flex: 1 }}>{block.title}</span>
+        <button
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={handleEditClick}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '2px',
+            fontSize: '14px',
+            lineHeight: '1',
+          }}
+        >
+          ✏️
+        </button>
+      </div>
+    );
+  }
+
   const handleSelectSlot = (slotInfo: SlotInfo) => {
     const newBlock: CalendarBlock = {
       id: Date.now(),
-      title: 'New Block',
+      title: '',
       start: slotInfo.start,
       end: slotInfo.end,
     };
     addBlock(newBlock);
+    // Enter edit mode for the new block
+    setEditingBlockId(newBlock.id);
+    setEditingTitle('');
     // Re-trigger render by updating the date range (same range)
     if (dateRange) {
       dispatch(setDateRange(dateRange.start, dateRange.end));
@@ -197,6 +292,7 @@ function App() {
         onEventResize={handleBlockResize}
         components={{
           eventWrapper: BlockWrapper,
+          event: CustomBlockEvent,
         }}
         style={{ height: '100%' }}
       />
