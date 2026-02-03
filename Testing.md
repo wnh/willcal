@@ -188,6 +188,31 @@
 - [ ] Run with `--db=/custom/path/test.db` to use custom database location
 - [ ] Verify blocks are saved to custom location
 
+## Category Hours Display in Week View
+- [ ] Switch to week view or work_week view
+- [ ] Create multiple blocks with different categories on Monday
+  - [ ] Create a 2-hour block assigned to "Work" category (e.g., 9:00 AM - 11:00 AM)
+  - [ ] Create a 1.5-hour block assigned to "Personal" category (e.g., 1:00 PM - 2:30 PM)
+  - [ ] Create a 3-hour block assigned to "Work" category (e.g., 3:00 PM - 6:00 PM)
+- [ ] Verify the day header for Monday displays category hour totals:
+  - [ ] Should show "Work: 5.0h" badge with Work category's color
+  - [ ] Should show "Personal: 1.5h" badge with Personal category's color
+  - [ ] Badges should be displayed horizontally with small gaps between them
+- [ ] Create blocks on Tuesday with a single category
+  - [ ] Create two 1-hour blocks assigned to "Work"
+  - [ ] Verify Tuesday's header shows "Work: 2.0h"
+- [ ] Verify a day with no blocks shows no category badges
+- [ ] Create a block that spans from Monday 11:00 PM to Tuesday 1:00 AM
+  - [ ] Verify Monday's header counts 1.0h for that block
+  - [ ] Verify Tuesday's header counts 1.0h for that block
+- [ ] Switch to month view - verify no category hour totals are shown (only in week views)
+- [ ] Switch back to week view - verify totals reappear
+- [ ] Move a block from Monday to Wednesday via drag & drop
+- [ ] Verify Monday's totals update (decrease)
+- [ ] Verify Wednesday's totals update (increase)
+- [ ] Change a block's category via right-click menu
+- [ ] Verify the day's category hour totals update immediately
+
 ## Console Logging (Development)
 - [ ] Open DevTools console
 - [ ] Create a block - verify SQL INSERT is logged

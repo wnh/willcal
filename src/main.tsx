@@ -106,6 +106,73 @@ function App() {
     return db.getBlocksByDateRange(dateRange.start, dateRange.end);
   }, [dateRange]);
 
+  // Create synthetic all-day events showing category hour totals per day
+  const eventsWithHourTotals = useMemo(() => {
+    if (!dateRange) return blocks;
+
+    const syntheticEvents: CalendarBlock[] = [];
+
+    // Get all days in the current date range
+    const currentDate = new Date(dateRange.start);
+    while (currentDate < dateRange.end) {
+      const dayStart = new Date(currentDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(currentDate);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      // Filter blocks for this day
+      const dayBlocks = blocks.filter(block => {
+        const blockStart = new Date(block.start);
+        const blockEnd = new Date(block.end);
+        return blockStart < dayEnd && blockEnd > dayStart;
+      });
+
+      // Calculate hours per category
+      const categoryHours = new Map<number, number>();
+      dayBlocks.forEach(block => {
+        if (block.categoryId) {
+          const blockStart = new Date(Math.max(block.start.getTime(), dayStart.getTime()));
+          const blockEnd = new Date(Math.min(block.end.getTime(), dayEnd.getTime()));
+          const hours = (blockEnd.getTime() - blockStart.getTime()) / (1000 * 60 * 60);
+
+          const current = categoryHours.get(block.categoryId) || 0;
+          categoryHours.set(block.categoryId, current + hours);
+        }
+      });
+
+      // Create one synthetic all-day event per category
+      let totalHours = 0;
+      Array.from(categoryHours.entries()).forEach(([categoryId, hours]) => {
+        const category = categories.find(c => c.id === categoryId);
+        if (category) {
+          totalHours += hours;
+          syntheticEvents.push({
+            id: -1 * (dayStart.getTime() + categoryId), // Unique negative ID
+            title: `${category.name}: ${hours.toFixed(2)}h`,
+            start: dayStart,
+            end: dayStart,
+            categoryId: categoryId, // Use actual category ID for coloring
+          });
+        }
+      });
+
+      // Add a total synthetic event if there are any hours
+      if (totalHours > 0) {
+        syntheticEvents.push({
+          id: -1 * dayStart.getTime(), // Unique negative ID for total
+          title: `Total: ${totalHours.toFixed(2)}h`,
+          start: dayStart,
+          end: dayStart,
+          categoryId: -999, // Special marker for total event
+        });
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return [...syntheticEvents, ...blocks];
+  }, [blocks, dateRange, categories]);
+
   const handleRangeChange = (range: Date[] | { start: Date; end: Date }) => {
     let start: Date;
     let end: Date;
@@ -188,6 +255,11 @@ function App() {
   };
 
   function BlockWrapper({ event: block, children }: BlockWrapperProps) {
+    // Don't show context menu for synthetic hour total events (negative IDs)
+    if (block.id < 0) {
+      return <div style={{ height: '100%' }}>{children}</div>;
+    }
+
     const handleContextMenu = (e: React.MouseEvent) => {
       e.preventDefault();
       console.log('Right click on block:', block);
@@ -229,6 +301,11 @@ function App() {
   }
 
   function CustomBlockEvent({ event: block }: { event: CalendarBlock }) {
+    // For synthetic hour total events, just display the title without edit button
+    if (block.id < 0) {
+      return <div style={{ width: '100%', padding: '2px' }}>{block.title}</div>;
+    }
+
     const isEditing = editingBlockId === block.id;
 
     const handleEditClick = (e: React.MouseEvent) => {
@@ -358,6 +435,9 @@ function App() {
   };
 
   const handleBlockDrop = ({ event, start, end }: { event: CalendarBlock; start: Date; end: Date }) => {
+    // Prevent moving synthetic hour total events
+    if (event.id < 0) return;
+
     updateBlockTime(event.id, start, end);
     // Re-trigger render by updating the date range (same range)
     if (dateRange) {
@@ -366,6 +446,9 @@ function App() {
   };
 
   const handleBlockResize = ({ event, start, end }: { event: CalendarBlock; start: Date; end: Date }) => {
+    // Prevent resizing synthetic hour total events
+    if (event.id < 0) return;
+
     updateBlockTime(event.id, start, end);
     // Re-trigger render by updating the date range (same range)
     if (dateRange) {
@@ -375,6 +458,18 @@ function App() {
 
   // Apply category colors to blocks
   const eventStyleGetter = (event: CalendarBlock) => {
+    // Special styling for total event
+    if (event.categoryId === -999) {
+      return {
+        style: {
+          backgroundColor: '#ffffff',
+          color: '#000000',
+          border: '1px solid #ddd',
+          fontWeight: 'bold',
+        }
+      };
+    }
+
     const category = categories.find(c => c.id === event.categoryId);
     return {
       style: {
@@ -432,7 +527,7 @@ function App() {
         <div style={{ flex: 1, paddingTop: '16px', boxSizing: 'border-box' }}>
           <DnDCalendar
             localizer={localizer}
-            events={blocks}
+            events={eventsWithHourTotals}
             defaultView="work_week"
             views={['month', 'week', 'work_week', 'day', 'agenda']}
             selectable
