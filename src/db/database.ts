@@ -1,4 +1,5 @@
 import { CalendarBlock } from '../store/types';
+import { runMigrations } from './migrationRunner';
 
 export const PASTEL_COLORS = [
   '#E57373', // Coral Pink
@@ -45,66 +46,6 @@ class BlocksDatabase {
     return rows;
   }
 
-  private initializeTables(): void {
-    console.log('Initializing database tables...');
-
-    // Check if categories table exists
-    const tableExists = this.all(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='categories'"
-    );
-
-    if (tableExists.length === 0) {
-      console.log('Categories table does not exist - creating it...');
-      // Categories table doesn't exist - first time setup
-      this.run(`
-        CREATE TABLE categories (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL UNIQUE,
-          color TEXT NOT NULL,
-          sort_order INTEGER NOT NULL
-        )
-      `);
-
-      // Create default General category
-      this.run(
-        'INSERT INTO categories (name, color, sort_order) VALUES (?, ?, ?)',
-        ['General', '#90A4AE', 0]
-      );
-      console.log('Created default "General" category');
-    }
-
-    // Check if blocks table has category_id column
-    const columnsResult = this.all("PRAGMA table_info(blocks)");
-    const hasCategoryId = columnsResult.some((col: any) => col.name === 'category_id');
-
-    if (!hasCategoryId) {
-      console.log('Blocks table missing category_id - migrating...');
-      // Migrate blocks table to add category_id
-      this.run(`
-        CREATE TABLE blocks_new (
-          id INTEGER PRIMARY KEY,
-          title TEXT NOT NULL,
-          start TEXT NOT NULL,
-          end TEXT NOT NULL,
-          category_id INTEGER,
-          FOREIGN KEY (category_id) REFERENCES categories(id)
-        )
-      `);
-
-      this.run('INSERT INTO blocks_new (id, title, start, end) SELECT id, title, start, end FROM blocks');
-      this.run('DROP TABLE blocks');
-      this.run('ALTER TABLE blocks_new RENAME TO blocks');
-
-      // Update all blocks to use General category
-      const generalCategory = this.all("SELECT id FROM categories WHERE name = 'General' LIMIT 1");
-      if (generalCategory.length > 0) {
-        this.run('UPDATE blocks SET category_id = ? WHERE category_id IS NULL', [generalCategory[0].id]);
-        console.log('Assigned all existing blocks to "General" category');
-      }
-    }
-
-    console.log('Database initialization complete');
-  }
 
   addBlock(block: CalendarBlock): void {
     // Support both old format (no categoryId) and new format (with categoryId)
@@ -261,7 +202,7 @@ export function openDatabase(filename: string): BlocksDatabase {
   const { Database } = require('node-sqlite3-wasm');
   const db = new Database(filename);
 
-  // Create blocks table if it doesn't exist (for brand new databases)
+  // Create blocks table skeleton (for brand new databases)
   db.exec(`
     CREATE TABLE IF NOT EXISTS blocks (
       id INTEGER PRIMARY KEY,
@@ -271,12 +212,25 @@ export function openDatabase(filename: string): BlocksDatabase {
     );
   `);
 
+  // Run migration system
+  const migrationResult = runMigrations(db, filename);
+
+  if (!migrationResult.success) {
+    const errorMsg = `Database migration failed: ${migrationResult.error?.message}`;
+    console.error(errorMsg);
+
+    // Show error to user (NW.js alert)
+    if (typeof nw !== 'undefined') {
+      nw.Window.get().show();
+      alert(`Database migration failed!\n\n${migrationResult.error?.message}\n\nThe database has been restored from backup. Please check the console for details.`);
+    }
+
+    throw new Error(errorMsg);
+  }
+
   dbInstance = new BlocksDatabase(db);
 
-  // Initialize/migrate tables
-  dbInstance['initializeTables']();
-
-  console.log('Database opened');
+  console.log('Database opened successfully');
 
   return dbInstance;
 }

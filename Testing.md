@@ -220,3 +220,62 @@
 - [ ] Move a block - verify SQL UPDATE is logged
 - [ ] Navigate calendar - verify SQL SELECT is logged with date range parameters
 - [ ] Verify Redux actions are logged (SET_DATE_RANGE)
+
+## Database Migrations
+
+### New Database (First Time)
+- [ ] Delete existing database: `rm ~/.local/share/willcal/willcal.db`
+- [ ] Start app: `npm run start`
+- [ ] Verify console shows "Running migration 1: Create categories table with default General category"
+- [ ] Verify console shows "Running migration 2: Add category_id column to blocks table"
+- [ ] Verify console shows "=== All migrations completed successfully ==="
+- [ ] Check database has `schema_version` table with migrations recorded
+- [ ] Verify no backup created (new DB, nothing to backup)
+- [ ] Verify "General" category exists in sidebar
+- [ ] Create a block and verify it's assigned to "General" category
+
+### Existing Database (Up to Date)
+- [ ] Start app with existing v2 database (pre-migration system)
+- [ ] Verify console shows "Current schema version: 2"
+- [ ] Verify console shows "Schema is up to date. No migrations needed."
+- [ ] Verify no backup created
+- [ ] Verify all existing blocks and categories are present
+- [ ] Verify app functions normally
+
+### Future Migration (v3+)
+- [ ] When new migration is added to codebase, start app
+- [ ] Verify backup created: `~/.local/share/willcal/backups/willcal.db.backup.YYYYMMDD_HHMMSS.before_v3`
+- [ ] Verify new migration runs successfully
+- [ ] Verify console shows "✓ Migration 3 completed successfully"
+- [ ] Check `schema_version` table updated with new version
+- [ ] Query: `SELECT * FROM schema_version` should show versions 1, 2, and 3
+- [ ] Create 6+ migrations over time and verify old backups are deleted (keeps last 5)
+
+### Migration Failure Recovery
+- [ ] SETUP: Edit a migration file to throw an error (e.g., add `throw new Error('Test failure');` in migration up())
+- [ ] Start application
+- [ ] Verify error alert appears with message "Database migration failed!"
+- [ ] Verify console shows "✗ Migration X failed:"
+- [ ] Verify console shows "Transaction rolled back"
+- [ ] Verify console shows "✓ Database successfully restored from backup"
+- [ ] Verify database file restored to pre-migration state
+- [ ] Verify application shows data from before failed migration
+- [ ] CLEANUP: Restore original migration file and restart successfully
+- [ ] Verify app now starts normally with migrations applied
+
+### In-Memory Database
+- [ ] Start app with in-memory database: `npm run dev` (uses --db=:memory:)
+- [ ] Verify console shows migrations running
+- [ ] Verify console shows "Skipping backup for in-memory database"
+- [ ] Verify no backups directory created
+- [ ] Create blocks and categories
+- [ ] Restart app - verify data is NOT persisted (fresh state every restart)
+
+### Backup Retention Policy
+- [ ] Ensure you have an existing v2 database
+- [ ] Create 6 fake future migrations (003 through 008)
+- [ ] Start app and let each migration run (might need to restart 6 times if testing incrementally)
+- [ ] Check `~/.local/share/willcal/backups/` directory
+- [ ] Verify only 5 most recent backup files are kept
+- [ ] Verify oldest backups were automatically deleted
+- [ ] Verify backup filenames follow format: `willcal.db.backup.YYYYMMDD_HHMMSS.before_vX`
