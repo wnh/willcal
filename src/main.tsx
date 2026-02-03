@@ -211,7 +211,7 @@ function App() {
     }
 
     return (
-      <div style={{ height: '100%', display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <div style={{ height: '100%', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
         <span style={{ flex: 1 }}>{block.title}</span>
         <button
           onMouseDown={(e) => {
@@ -279,11 +279,12 @@ function App() {
   };
 
   return (
-    <div style={{ height: '100vh' }}>
+    <div style={{ height: '100vh', padding: '16px', boxSizing: 'border-box' }}>
       <DnDCalendar
         localizer={localizer}
         events={blocks}
-        defaultView="week"
+        defaultView="work_week"
+        views={['month', 'week', 'work_week', 'day', 'agenda']}
         selectable
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleSelectBlock}
