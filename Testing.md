@@ -50,8 +50,19 @@
 - [ ] Navigate between weeks using calendar controls
 - [ ] Verify only blocks in visible date range are loaded
 - [ ] Switch to month view
+- [ ] Switch to work week view
 - [ ] Switch to agenda view
-- [ ] Return to week view (default)
+- [ ] Return to week view
+
+## Work Hours Toggle
+- [ ] Verify the "Work hours only (6:00 AM - 6:00 PM)" checkbox appears at the top
+- [ ] Checkbox should be checked by default
+- [ ] Verify calendar displays only 6:00 AM to 6:00 PM time range
+- [ ] Uncheck the "Work hours only" checkbox
+- [ ] Verify calendar expands to show full 24-hour day (12:00 AM to 11:00 PM)
+- [ ] Check the checkbox again
+- [ ] Verify calendar returns to 6:00 AM - 6:00 PM range
+- [ ] Create blocks during work hours, toggle checkbox, verify blocks still display correctly
 
 ## Database Persistence
 - [ ] Create several blocks and close the application

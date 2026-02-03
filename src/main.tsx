@@ -75,6 +75,7 @@ function App() {
   const dateRange = useSelector((state: RootState) => state.dateRange);
   const [editingBlockId, setEditingBlockId] = useState<number | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>('');
+  const [showWorkHoursOnly, setShowWorkHoursOnly] = useState<boolean>(true);
 
   // Set initial date range for the week view
   useEffect(() => {
@@ -211,8 +212,7 @@ function App() {
     }
 
     return (
-      <div style={{ height: '100%', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-        <span style={{ flex: 1 }}>{block.title}</span>
+      <div style={{ width: '100%', height: '100%', position: 'relative' }}>
         <button
           onMouseDown={(e) => {
             e.preventDefault();
@@ -220,16 +220,21 @@ function App() {
           }}
           onClick={handleEditClick}
           style={{
+            position: 'absolute',
+            top: '0',
+            right: '0',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            padding: '2px',
-            fontSize: '14px',
+            padding: '2px 4px',
+            fontSize: '12px',
             lineHeight: '1',
+            zIndex: 10,
           }}
         >
           ✏️
         </button>
+        <div style={{ paddingRight: '24px', paddingTop: '2px' }}>{block.title}</div>
       </div>
     );
   }
@@ -279,24 +284,40 @@ function App() {
   };
 
   return (
-    <div style={{ height: '100vh', padding: '16px', boxSizing: 'border-box' }}>
-      <DnDCalendar
-        localizer={localizer}
-        events={blocks}
-        defaultView="work_week"
-        views={['month', 'week', 'work_week', 'day', 'agenda']}
-        selectable
-        onSelectSlot={handleSelectSlot}
-        onSelectEvent={handleSelectBlock}
-        onRangeChange={handleRangeChange}
-        onEventDrop={handleBlockDrop}
-        onEventResize={handleBlockResize}
-        components={{
-          eventWrapper: BlockWrapper,
-          event: CustomBlockEvent,
-        }}
-        style={{ height: '100%' }}
-      />
+    <div style={{ height: '100vh', padding: '16px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={showWorkHoursOnly}
+            onChange={(e) => setShowWorkHoursOnly(e.target.checked)}
+          />
+          <span>Work hours only (6:00 AM - 6:00 PM)</span>
+        </label>
+      </div>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <DnDCalendar
+          localizer={localizer}
+          events={blocks}
+          defaultView="work_week"
+          views={['month', 'week', 'work_week', 'day', 'agenda']}
+          selectable
+          step={15}
+          timeslots={4}
+          min={showWorkHoursOnly ? new Date(1970, 0, 1, 6, 0, 0) : undefined}
+          max={showWorkHoursOnly ? new Date(1970, 0, 1, 18, 0, 0) : undefined}
+          onSelectSlot={handleSelectSlot}
+          onSelectEvent={handleSelectBlock}
+          onRangeChange={handleRangeChange}
+          onEventDrop={handleBlockDrop}
+          onEventResize={handleBlockResize}
+          components={{
+            eventWrapper: BlockWrapper,
+            event: CustomBlockEvent,
+          }}
+          style={{ height: '100%' }}
+        />
+      </div>
     </div>
   );
 }
