@@ -194,10 +194,19 @@ function App() {
 
       const menu = new nw.Menu();
 
-      // Add category submenu
-      const categoryMenu = new nw.Menu();
+      menu.append(new nw.MenuItem({
+        label: 'Delete',
+        click: () => {
+          console.log('Delete clicked for block:', block);
+          handleDeleteBlock(block.id);
+        }
+      }));
+
+      menu.append(new nw.MenuItem({ type: 'separator' }));
+
+      // Add category items
       categories.forEach(category => {
-        categoryMenu.append(new nw.MenuItem({
+        menu.append(new nw.MenuItem({
           label: category.name,
           type: 'checkbox',
           checked: block.categoryId === category.id,
@@ -209,22 +218,6 @@ function App() {
           }
         }));
       });
-
-      menu.append(new nw.MenuItem({
-        label: 'Category',
-        submenu: categoryMenu
-      }));
-
-      menu.append(new nw.MenuItem({ type: 'separator' }));
-
-      menu.append(new nw.MenuItem({
-        label: 'Delete',
-        click: () => {
-          console.log('Delete clicked for block:', block);
-          handleDeleteBlock(block.id);
-        }
-      }));
-
       menu.popup(e.clientX, e.clientY);
     };
 
