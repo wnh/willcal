@@ -84,6 +84,7 @@ function App() {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [currentView, setCurrentView] = useState<string>('work_week');
+  const [now, setNow] = useState<Date>(new Date());
 
   // Load categories on mount
   useEffect(() => {
@@ -91,6 +92,15 @@ function App() {
     const categories = db.getAllCategories();
     dispatch(setCategories(categories));
   }, [dispatch]);
+
+  // Update 'now' every 30 seconds to keep the current time indicator fresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(new Date());
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Set initial date range for the week view
   useEffect(() => {
@@ -553,6 +563,7 @@ function App() {
             selectable
             step={15}
             timeslots={4}
+            now={now}
             min={showWorkHoursOnly ? new Date(1970, 0, 1, 6, 0, 0) : undefined}
             max={showWorkHoursOnly ? new Date(1970, 0, 1, 18, 0, 0) : undefined}
             onSelectSlot={handleSelectSlot}
