@@ -311,3 +311,45 @@
 - [ ] Verify only 5 most recent backup files are kept
 - [ ] Verify oldest backups were automatically deleted
 - [ ] Verify backup filenames follow format: `willcal.db.backup.YYYYMMDD_HHMMSS.before_vX`
+
+## Left Border Styling
+
+### Category Boxes (Sidebar)
+- [ ] Open the sidebar (if collapsed, click "☰ Show Categories")
+- [ ] Verify each category box has:
+  - [ ] A light gray background (`#f5f5f5`)
+  - [ ] A thick colored border on the left side only (4px width)
+  - [ ] The left border color matches the category's color
+  - [ ] Dark text color (`#333`) instead of white
+  - [ ] No colored background fill (only the left border is colored)
+- [ ] Create a new category with a bright color (e.g., red)
+- [ ] Verify the category box has a red left border with gray background
+- [ ] Edit a category to change its color
+- [ ] Verify the left border color updates immediately
+
+### Calendar Blocks
+- [ ] Create a block and assign it to a category
+- [ ] Verify the block has:
+  - [ ] A light gray background (`#f5f5f5`)
+  - [ ] Black text color that is clearly readable
+  - [ ] A thick colored border on the left side only (4px width)
+  - [ ] The left border color matches the block's category color
+  - [ ] A thin border on all sides (`1px solid #ddd`) for definition
+- [ ] Create blocks with different categories
+- [ ] Verify each block's left border matches its category color
+- [ ] Verify text is black and readable on all blocks
+- [ ] Change a block's category via right-click menu
+- [ ] Verify the left border color changes immediately to match the new category
+- [ ] Switch between week, work_week, and day views
+- [ ] Verify left border styling is consistent across all views
+- [ ] Verify thin borders are visible on all blocks in week/work_week views
+- [ ] Switch to month view and verify left border styling on month view blocks
+
+### Total Blocks (Synthetic Events)
+- [ ] In week or work_week view, create blocks to generate daily totals
+- [ ] Verify the "Total: X.Xh" all-day events have:
+  - [ ] A white background (`#ffffff`)
+  - [ ] A thick gray/dark left border (4px, color `#666`)
+  - [ ] A thin border on all sides (`1px solid #ddd`)
+  - [ ] Bold text
+- [ ] Verify category hour totals (e.g., "Work: 5.0h") also have left borders matching their category colors

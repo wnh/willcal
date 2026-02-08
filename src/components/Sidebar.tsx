@@ -8,9 +8,10 @@ interface SidebarProps {
   onAddCategory: () => void;
   onEditCategory: (category: Category) => void;
   onDeleteCategory: (categoryId: number) => void;
+  categoryBorderWidth?: string;
 }
 
-export function Sidebar({ onAddCategory, onEditCategory, onDeleteCategory }: SidebarProps) {
+export function Sidebar({ onAddCategory, onEditCategory, onDeleteCategory, categoryBorderWidth }: SidebarProps) {
   const categories = useSelector((state: RootState) => state.categories);
   const [draggedCategory, setDraggedCategory] = React.useState<Category | null>(null);
   const dispatch = useDispatch<AppDispatch>();
@@ -103,7 +104,8 @@ export function Sidebar({ onAddCategory, onEditCategory, onDeleteCategory }: Sid
               padding: '10px',
               marginBottom: '8px',
               borderRadius: '4px',
-              backgroundColor: category.color,
+              backgroundColor: '#f5f5f5',
+              borderLeft: `${categoryBorderWidth} solid ${category.color}`,
               cursor: 'grab',
               display: 'flex',
               alignItems: 'center',
@@ -111,7 +113,7 @@ export function Sidebar({ onAddCategory, onEditCategory, onDeleteCategory }: Sid
               transition: 'transform 0.1s',
             }}
           >
-            <span style={{ fontWeight: 500, color: 'white' }}>{category.name}</span>
+            <span style={{ fontWeight: 500, color: '#333' }}>{category.name}</span>
             <div style={{ display: 'flex', gap: '4px' }}>
               <button
                 onClick={(e) => handleEditClick(category, e)}

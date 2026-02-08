@@ -118,6 +118,9 @@ function App() {
   const [currentView, setCurrentView] = useState<string>('work_week');
   const [now, setNow] = useState<Date>(new Date());
 
+  // Border width for category color indicators
+  const categoryBorderWidth = '0.5em';
+
   // Load categories on mount
   useEffect(() => {
     const db = getDatabase();
@@ -538,15 +541,20 @@ function App() {
           backgroundColor: '#ffffff',
           color: '#000000',
           border: '1px solid #ddd',
+          borderLeft: `${categoryBorderWidth} solid #666`,
           fontWeight: 'bold',
         }
       };
     }
 
     const category = categories.find(c => c.id === event.categoryId);
+    const color = category?.color || '#E5E5E5';
     return {
       style: {
-        backgroundColor: category?.color || '#E5E5E5',
+        backgroundColor: '#f5f5f5',
+        color: '#000000',
+        border: '1px solid #ddd',
+        borderLeft: `${categoryBorderWidth} solid ${color}`,
       }
     };
   };
@@ -593,6 +601,7 @@ function App() {
             onAddCategory={handleAddCategoryClick}
             onEditCategory={handleEditCategoryClick}
             onDeleteCategory={handleDeleteCategory}
+            categoryBorderWidth={categoryBorderWidth}
           />
         )}
 
