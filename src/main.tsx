@@ -54,6 +54,40 @@ try {
   console.error('Database initialization failed:', error);
 }
 
+// Check for upcoming blocks and show notification
+function checkUpcomingBlocks() {
+  const db = getDatabase();
+  const now = new Date();
+  const futureTime = new Date(now.getTime() + 30 * 1000); // 30 seconds from now
+  const nextBlock = db.getNextUpcomingBlock(now, futureTime);
+
+  if (nextBlock) {
+    nw.Window.open('notification.html', {
+      width: 350,
+      height: 150,
+      resizable: false,
+      frame: true,
+      show: true,
+    }, function(notificationWin: any) {
+      notificationWin.setAlwaysOnTop(true);
+
+      // Center the window on screen
+      const screenWidth = window.screen.width;
+      const screenHeight = window.screen.height;
+      const windowWidth = 350;
+      const windowHeight = 150;
+      const x = Math.floor((screenWidth - windowWidth) / 2);
+      const y = Math.floor((screenHeight - windowHeight) / 2);
+      notificationWin.moveTo(x, y);
+
+      // Pass block data to the notification window
+      notificationWin.on('loaded', function() {
+        notificationWin.window.setBlockData(nextBlock);
+      });
+    });
+  }
+}
+
 const locales = {
   'en-US': enUS,
 };
@@ -94,9 +128,14 @@ function App() {
   }, [dispatch]);
 
   // Update 'now' every 30 seconds to keep the current time indicator fresh
+  // Also check for upcoming blocks
   useEffect(() => {
+    // Check immediately on mount
+    checkUpcomingBlocks();
+
     const interval = setInterval(() => {
       setNow(new Date());
+      checkUpcomingBlocks();
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);

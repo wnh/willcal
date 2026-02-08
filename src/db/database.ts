@@ -195,6 +195,31 @@ class BlocksDatabase {
     );
   }
 
+  getNextUpcomingBlock(startTime: Date, endTime: Date): CalendarBlock | null {
+    const rows = this.all(
+      'SELECT * FROM blocks WHERE start >= ? AND start < ? ORDER BY start ASC LIMIT 1',
+      [startTime.toISOString(), endTime.toISOString()]
+    );
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const row = rows[0];
+    const block: any = {
+      id: row.id,
+      title: row.title,
+      start: new Date(row.start),
+      end: new Date(row.end),
+    };
+
+    if (row.category_id !== undefined && row.category_id !== null) {
+      block.categoryId = row.category_id;
+    }
+
+    return block;
+  }
+
   close(): void {
     this.db.close();
   }

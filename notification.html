@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Notification</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    body {
+      padding: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: #fff;
+      border: 2px solid #333;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    h2 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      color: #333;
+    }
+    p {
+      margin: 0 0 15px 0;
+      font-size: 14px;
+      color: #666;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h2>Next Upcoming Block</h2>
+  <p id="blockInfo">Loading...</p>
+  <button onclick="closeWindow()">Close</button>
+
+  <script>
+    let blockData = null;
+
+    function setBlockData(block) {
+      blockData = block;
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      const blockInfo = document.getElementById('blockInfo');
+      if (blockData) {
+        const startTime = new Date(blockData.start);
+        const formattedTime = startTime.toLocaleString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+        blockInfo.textContent = `${blockData.title} at ${formattedTime}`;
+      } else {
+        blockInfo.textContent = 'No upcoming blocks';
+      }
+    }
+
+    function closeWindow() {
+      nw.Window.get().close();
+    }
+
+    // Make setBlockData available globally
+    window.setBlockData = setBlockData;
+  </script>
+</body>
+</html>
