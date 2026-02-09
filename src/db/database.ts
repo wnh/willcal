@@ -1,6 +1,8 @@
 import { CalendarBlock } from '../store/types';
 import { runMigrations } from './migrationRunner';
 
+declare const nw: any;
+
 export const PASTEL_COLORS = [
   '#E57373', // Coral Pink
   '#FF8A65', // Peach

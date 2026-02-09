@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../store/store';
+import { RootState, AppDispatch } from '../store/store';
 import { Category } from '../db/database';
 import { reorderCategories } from '../store/actions';
 
@@ -13,7 +13,7 @@ interface SidebarProps {
 export function Sidebar({ onAddCategory, onEditCategory, onDeleteCategory }: SidebarProps) {
   const categories = useSelector((state: RootState) => state.categories);
   const [draggedCategory, setDraggedCategory] = React.useState<Category | null>(null);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const handleDragStart = (category: Category) => {
     setDraggedCategory(category);

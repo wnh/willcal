@@ -21,8 +21,6 @@ import { openDatabase, getDatabase, Category } from './db/database';
 import { Sidebar } from './components/Sidebar';
 import { CategoryDialog } from './components/CategoryDialog';
 
-declare const nw: any;
-
 // Parse command line arguments for database filename
 function getDatabaseFilename(): string {
   const args = nw.App.argv.slice(2); // Skip node and script path
@@ -100,11 +98,11 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-const DnDCalendar = withDragAndDrop(Calendar);
+const DnDCalendar = withDragAndDrop<CalendarBlock>(Calendar);
 
 interface BlockWrapperProps {
   event: CalendarBlock;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 function App() {
@@ -335,7 +333,7 @@ function App() {
 
       const menu = new nw.Menu();
 
-      menu.append(new nw.MenuItem({
+      menu.append(nw.MenuItem({
         label: 'Delete',
         click: () => {
           console.log('Delete clicked for block:', block);
@@ -343,11 +341,11 @@ function App() {
         }
       }));
 
-      menu.append(new nw.MenuItem({ type: 'separator' }));
+      menu.append(nw.MenuItem({ type: 'separator' }));
 
       // Add category items
       categories.forEach(category => {
-        menu.append(new nw.MenuItem({
+        menu.append(nw.MenuItem({
           label: category.name,
           type: 'checkbox',
           checked: block.categoryId === category.id,
@@ -503,22 +501,28 @@ function App() {
     }
   };
 
-  const handleBlockDrop = ({ event, start, end }: { event: CalendarBlock; start: Date; end: Date }) => {
+  const handleBlockDrop = ({ event, start, end }: { event: CalendarBlock; start: string | Date; end: string | Date }) => {
     // Prevent moving synthetic hour total events
     if (event.id < 0) return;
 
-    updateBlockTime(event.id, start, end);
+    const startDate = typeof start === 'string' ? new Date(start) : start;
+    const endDate = typeof end === 'string' ? new Date(end) : end;
+
+    updateBlockTime(event.id, startDate, endDate);
     // Re-trigger render by updating the date range (same range)
     if (dateRange) {
       dispatch(setDateRange(dateRange.start, dateRange.end));
     }
   };
 
-  const handleBlockResize = ({ event, start, end }: { event: CalendarBlock; start: Date; end: Date }) => {
+  const handleBlockResize = ({ event, start, end }: { event: CalendarBlock; start: string | Date; end: string | Date }) => {
     // Prevent resizing synthetic hour total events
     if (event.id < 0) return;
 
-    updateBlockTime(event.id, start, end);
+    const startDate = typeof start === 'string' ? new Date(start) : start;
+    const endDate = typeof end === 'string' ? new Date(end) : end;
+
+    updateBlockTime(event.id, startDate, endDate);
     // Re-trigger render by updating the date range (same range)
     if (dateRange) {
       dispatch(setDateRange(dateRange.start, dateRange.end));
@@ -602,7 +606,7 @@ function App() {
             selectable
             step={15}
             timeslots={4}
-            now={now}
+            {...({ now } as any)}
             min={showWorkHoursOnly ? new Date(1970, 0, 1, 6, 0, 0) : undefined}
             max={showWorkHoursOnly ? new Date(1970, 0, 1, 18, 0, 0) : undefined}
             onSelectSlot={handleSelectSlot}
