@@ -24,3 +24,9 @@
 .rbc-addons-dnd .rbc-addons-dnd-resize-ns-anchor:hover .rbc-addons-dnd-resize-ns-icon {
   display: block !important;
 }
+
+/* Add padding to event content to prevent overlap with resize handles */
+.rbc-event-content {
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+}

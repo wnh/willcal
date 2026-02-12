@@ -378,6 +378,12 @@ function App() {
 
     const isEditing = editingBlockId === block.id;
 
+    // Format time range as "start time - duration"
+    const startTime = format(block.start, 'h:mm a');
+    const durationMs = block.end.getTime() - block.start.getTime();
+    const durationHours = (durationMs / (1000 * 60 * 60)).toFixed(2);
+    const timeRange = `${startTime} - ${durationHours}h`;
+
     const handleEditClick = (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
@@ -419,25 +425,30 @@ function App() {
 
     if (isEditing) {
       return (
-        <input
-          type="text"
-          value={editingTitle}
-          onChange={(e) => setEditingTitle(e.target.value)}
-          onBlur={handleSave}
-          onKeyDown={handleKeyDown}
-          autoFocus
-          style={{
-            width: '100%',
-            border: 'none',
-            background: 'transparent',
-            color: 'inherit',
-            font: 'inherit',
-            padding: 0,
-            outline: 'none',
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-        />
+        <div style={{ width: '100%' }}>
+          <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
+            {timeRange}
+          </div>
+          <input
+            type="text"
+            value={editingTitle}
+            onChange={(e) => setEditingTitle(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            autoFocus
+            style={{
+              width: '100%',
+              border: 'none',
+              background: 'transparent',
+              color: 'inherit',
+              font: 'inherit',
+              padding: 0,
+              outline: 'none',
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       );
     }
 
@@ -464,7 +475,12 @@ function App() {
         >
           ✏️
         </button>
-        <div style={{ paddingRight: '24px', paddingTop: '2px' }}>{block.title}</div>
+        <div style={{ paddingRight: '24px', paddingTop: '2px' }}>
+          <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>
+            {timeRange}
+          </div>
+          <div>{block.title}</div>
+        </div>
       </div>
     );
   }
@@ -625,6 +641,9 @@ function App() {
             onEventDrop={handleBlockDrop}
             onEventResize={handleBlockResize}
             eventPropGetter={eventStyleGetter}
+            formats={{
+              eventTimeRangeFormat: () => '',
+            }}
             components={{
               eventWrapper: BlockWrapper,
               event: CustomBlockEvent,

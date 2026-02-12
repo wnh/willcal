@@ -3,10 +3,13 @@
 ## Block Creation
 - [ ] Click on an empty time slot to create a new block
 - [ ] Verify new block immediately enters edit mode with an empty input field
+- [ ] Verify the time range is displayed above the input field in format "9:00 AM - 1.00h" (start time - duration)
 - [ ] Type a title (e.g., "Team Meeting") and press Enter to save
 - [ ] Verify block is created with the entered title
-- [ ] Click and drag to create a block spanning multiple time slots
+- [ ] Verify the time range is displayed above the title in a smaller, gray font
+- [ ] Click and drag to create a block spanning multiple time slots (e.g., 2.5 hours)
 - [ ] Verify new block enters edit mode automatically
+- [ ] Verify duration is displayed correctly (e.g., "9:00 AM - 2.50h")
 - [ ] Enter a title and save, verify block is saved to database (persists after restart)
 - [ ] Create a new block, then press Escape without entering a title
 - [ ] Verify the block is deleted (canceled creation)
@@ -46,9 +49,13 @@
 - [ ] Verify a gray colored bar appears at the top edge (10px height, full width)
 - [ ] Hover over the bottom edge of a block (within 10px from bottom)
 - [ ] Verify a gray colored bar appears at the bottom edge (10px height, full width)
-- [ ] Move mouse away from the edges - verify resize handles disappear
-- [ ] Hover over the top edge and drag to change start time
+- [ ] Hover over block again and drag top edge to change start time
+- [ ] Hover over block and drag bottom edge to change end time
 - [ ] Hover over the bottom edge and drag to change end time
+- [ ] Hover over the top edge and drag to change start time
+- [ ] Move mouse away from block - verify resize handles disappear
+- [ ] Move mouse away from the edges - verify resize handles disappear
+- [ ] Verify the resize handles don't overlap the block text (12px padding top/bottom)
 - [ ] Verify resized times are saved to database (persists after restart)
 - [ ] Verify resize handles are easier to grab with the larger 10px height
 - [ ] Verify the colored bar style is cleaner than the previous line style
