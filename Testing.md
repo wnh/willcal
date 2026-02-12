@@ -40,11 +40,18 @@
 - [ ] Drag block to different day in week view
 
 ## Block Resizing
-- [ ] Hover over top edge of block to see resize handle
-- [ ] Drag top edge to change start time
-- [ ] Hover over bottom edge of block to see resize handle
-- [ ] Drag bottom edge to change end time
+- [ ] Verify resize handles are not visible by default (when not hovering)
+- [ ] Hover over the middle of a block - verify resize handles do NOT appear
+- [ ] Hover over the top edge of a block (within 10px from top)
+- [ ] Verify a gray colored bar appears at the top edge (10px height, full width)
+- [ ] Hover over the bottom edge of a block (within 10px from bottom)
+- [ ] Verify a gray colored bar appears at the bottom edge (10px height, full width)
+- [ ] Move mouse away from the edges - verify resize handles disappear
+- [ ] Hover over the top edge and drag to change start time
+- [ ] Hover over the bottom edge and drag to change end time
 - [ ] Verify resized times are saved to database (persists after restart)
+- [ ] Verify resize handles are easier to grab with the larger 10px height
+- [ ] Verify the colored bar style is cleaner than the previous line style
 
 ## Calendar Navigation
 - [ ] Navigate between weeks using calendar controls

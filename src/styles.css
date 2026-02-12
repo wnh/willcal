@@ -5,3 +5,22 @@
   background-color: red !important;
   height: 2px !important;
 }
+
+/* Make resize handles larger - 10px height, full width */
+.rbc-addons-dnd .rbc-addons-dnd-resize-ns-anchor {
+  height: 10px !important;
+  z-index: 100 !important;
+}
+
+.rbc-addons-dnd .rbc-addons-dnd-resize-ns-anchor .rbc-addons-dnd-resize-ns-icon {
+  width: 100% !important;
+  height: 10px !important;
+  border: none !important;
+  background-color: rgba(100, 100, 100, 0.6) !important;
+  display: none !important;
+}
+
+/* Show resize handles only when hovering over the handle anchor itself */
+.rbc-addons-dnd .rbc-addons-dnd-resize-ns-anchor:hover .rbc-addons-dnd-resize-ns-icon {
+  display: block !important;
+}
