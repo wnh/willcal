@@ -1,5 +1,6 @@
 import { migrations } from './migrations';
 import { createBackup, restoreFromBackup } from './backup';
+import type { Database } from 'node-sqlite3-wasm';
 
 export interface MigrationResult {
   success: boolean;
@@ -10,7 +11,7 @@ export interface MigrationResult {
   backupPath?: string;
 }
 
-export function runMigrations(db: any, dbPath: string): MigrationResult {
+export function runMigrations(db: Database, dbPath: string): MigrationResult {
   console.log('=== Starting Migration Process ===');
 
   const currentVersion = getCurrentSchemaVersion(db);
@@ -129,7 +130,7 @@ export function runMigrations(db: any, dbPath: string): MigrationResult {
   }
 }
 
-function getCurrentSchemaVersion(db: any): number {
+function getCurrentSchemaVersion(db: Database): number {
   // Check if schema_version table exists
   const tables = db.all(
     "SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'"
@@ -148,12 +149,12 @@ function getCurrentSchemaVersion(db: any): number {
       // Pre-migration database with ad-hoc migrations already applied
       // Check if category_id column exists to determine version
       const columns = db.all("PRAGMA table_info(blocks)");
-      const hasCategoryId = columns.some((col: any) => col.name === 'category_id');
+      const hasCategoryId = columns.some((col) => col.name === 'category_id');
       return hasCategoryId ? 2 : 1;
     }
   }
 
   // Get latest version from schema_version table
   const result = db.all('SELECT MAX(version) as version FROM schema_version');
-  return result[0]?.version ?? 0;
+  return (result[0]?.version as number) ?? 0;
 }

@@ -1,14 +1,16 @@
+import type { Database } from 'node-sqlite3-wasm';
+
 export interface Migration {
   version: number;
   description: string;
-  up: (db: any) => void;
+  up: (db: Database) => void;
 }
 
 export const migrations: Migration[] = [
   {
     version: 1,
     description: 'Create categories table with default General category',
-    up: (db: any) => {
+    up: (db) => {
       db.run(`
         CREATE TABLE categories (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,7 +30,7 @@ export const migrations: Migration[] = [
   {
     version: 2,
     description: 'Add category_id column to blocks table',
-    up: (db: any) => {
+    up: (db) => {
       // SQLite doesn't support ALTER TABLE ADD COLUMN with FOREIGN KEY
       // Must recreate table
       db.run(`
@@ -49,14 +51,14 @@ export const migrations: Migration[] = [
       // Assign all existing blocks to General category
       const generalCategory = db.all("SELECT id FROM categories WHERE name = 'General' LIMIT 1");
       if (generalCategory.length > 0) {
-        db.run('UPDATE blocks SET category_id = ? WHERE category_id IS NULL', [generalCategory[0].id]);
+        db.run('UPDATE blocks SET category_id = ? WHERE category_id IS NULL', [generalCategory[0].id as number]);
       }
     }
   },
   {
     version: 3,
     description: 'Add include_in_totals column to categories table',
-    up: (db: any) => {
+    up: (db) => {
       db.run('ALTER TABLE categories ADD COLUMN include_in_totals INTEGER NOT NULL DEFAULT 1');
     }
   },

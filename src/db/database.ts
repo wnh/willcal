@@ -1,7 +1,6 @@
 import { CalendarBlock } from '../store/types';
 import { runMigrations } from './migrationRunner';
-
-declare const nw: any;
+import type { Database, BindValues, QueryResult } from 'node-sqlite3-wasm';
 
 export const PASTEL_COLORS = [
   '#E57373', // Coral Pink
@@ -31,18 +30,18 @@ export interface Category {
 }
 
 class BlocksDatabase {
-  private db: any;
+  private db: Database;
 
-  constructor(db: any) {
+  constructor(db: Database) {
     this.db = db;
   }
 
-  private run(sql: string, params?: any[]): void {
+  private run(sql: string, params?: BindValues): void {
     console.log('SQL run:', sql, 'params:', params);
     this.db.run(sql, params);
   }
 
-  private all(sql: string, params?: any[]): any[] {
+  private all(sql: string, params?: BindValues): QueryResult[] {
     console.log('SQL all:', sql, 'params:', params);
     const rows = this.db.all(sql, params);
     console.log('SQL result:', rows.length, 'rows');
@@ -87,11 +86,11 @@ class BlocksDatabase {
   getAllBlocks(): CalendarBlock[] {
     const rows = this.all('SELECT * FROM blocks');
 
-    return rows.map((row: any) => ({
-      id: row.id,
-      title: row.title,
-      start: new Date(row.start),
-      end: new Date(row.end),
+    return rows.map((row) => ({
+      id: row.id as number,
+      title: row.title as string,
+      start: new Date(row.start as string),
+      end: new Date(row.end as string),
     }));
   }
 
@@ -101,16 +100,16 @@ class BlocksDatabase {
       [end.toISOString(), start.toISOString()]
     );
 
-    return rows.map((row: any) => {
-      const block: any = {
-        id: row.id,
-        title: row.title,
-        start: new Date(row.start),
-        end: new Date(row.end),
+    return rows.map((row) => {
+      const block: CalendarBlock & { categoryId?: number } = {
+        id: row.id as number,
+        title: row.title as string,
+        start: new Date(row.start as string),
+        end: new Date(row.end as string),
       };
       // Include categoryId if it exists
       if (row.category_id !== undefined && row.category_id !== null) {
-        block.categoryId = row.category_id;
+        block.categoryId = row.category_id as number;
       }
       return block;
     });
@@ -119,19 +118,19 @@ class BlocksDatabase {
   // CATEGORY CRUD METHODS
   getAllCategories(): Category[] {
     const rows = this.all('SELECT * FROM categories ORDER BY sort_order ASC');
-    return rows.map((row: any) => ({
-      id: row.id,
-      name: row.name,
-      color: row.color,
-      sortOrder: row.sort_order,
-      includeInTotals: row.include_in_totals === 1,
+    return rows.map((row) => ({
+      id: row.id as number,
+      name: row.name as string,
+      color: row.color as string,
+      sortOrder: row.sort_order as number,
+      includeInTotals: (row.include_in_totals as number) === 1,
     }));
   }
 
   addCategory(name: string, color: string, includeInTotals: boolean = true): Category {
     // Get max sort_order
     const maxOrder = this.all('SELECT MAX(sort_order) as max FROM categories');
-    const sortOrder = (maxOrder[0]?.max ?? -1) + 1;
+    const sortOrder = ((maxOrder[0]?.max as number | null) ?? -1) + 1;
 
     this.run(
       'INSERT INTO categories (name, color, sort_order, include_in_totals) VALUES (?, ?, ?, ?)',
@@ -143,11 +142,11 @@ class BlocksDatabase {
     const row = rows[0];
 
     return {
-      id: row.id,
-      name: row.name,
-      color: row.color,
-      sortOrder: row.sort_order,
-      includeInTotals: row.include_in_totals === 1,
+      id: row.id as number,
+      name: row.name as string,
+      color: row.color as string,
+      sortOrder: row.sort_order as number,
+      includeInTotals: (row.include_in_totals as number) === 1,
     };
   }
 
@@ -166,8 +165,9 @@ class BlocksDatabase {
   deleteCategory(id: number): void {
     // Check if any blocks use this category
     const blocks = this.all('SELECT COUNT(*) as count FROM blocks WHERE category_id = ?', [id]);
-    if (blocks[0].count > 0) {
-      throw new Error(`Cannot delete category: ${blocks[0].count} block(s) are using this category`);
+    const count = blocks[0]?.count as number;
+    if (count > 0) {
+      throw new Error(`Cannot delete category: ${count} block(s) are using this category`);
     }
 
     this.run('DELETE FROM categories WHERE id = ?', [id]);
@@ -187,7 +187,7 @@ class BlocksDatabase {
       'SELECT COUNT(*) as count FROM blocks WHERE category_id = ?',
       [categoryId]
     );
-    return rows[0].count;
+    return rows[0].count as number;
   }
 
   updateBlockCategory(blockId: number, categoryId: number): void {
@@ -208,15 +208,15 @@ class BlocksDatabase {
     }
 
     const row = rows[0];
-    const block: any = {
-      id: row.id,
-      title: row.title,
-      start: new Date(row.start),
-      end: new Date(row.end),
+    const block: CalendarBlock & { categoryId?: number } = {
+      id: row.id as number,
+      title: row.title as string,
+      start: new Date(row.start as string),
+      end: new Date(row.end as string),
     };
 
     if (row.category_id !== undefined && row.category_id !== null) {
-      block.categoryId = row.category_id;
+      block.categoryId = row.category_id as number;
     }
 
     return block;
