@@ -1,42 +1,35 @@
-// Global type definitions for NW.js API
-// This file provides TypeScript types for the Node-WebKit (NW.js) APIs used in the application
+// Global type definitions
+// NW.js types are provided by @types/nw.js package
 
-declare namespace nw {
-  interface App {
-    argv: string[];
+import type { CalendarBlock } from './store/types';
+
+// Extend NW.js types with custom properties used in the application
+declare global {
+  namespace NWJS_Helpers {
+    interface win {
+      window: {
+        /**
+         * Custom function defined in notification.html that receives block data
+         * from the main window and displays it in the notification popup.
+         * See notification.html line 56 where this function is defined and line 84 where it's attached to window.
+         */
+        setBlockData(data: CalendarBlock): void;
+      };
+    }
   }
 
-  interface Window {
-    open(url: string, options?: any, callback?: (win: Window) => void): Window;
-    setAlwaysOnTop(alwaysOnTop: boolean): void;
-    moveTo(x: number, y: number): void;
-    on(event: 'loaded', callback: () => void): void;
-
-    window: {
-      setBlockData(data: any): void;
-    };
-  }
-
-  interface MenuItem {
-    label?: string;
-    click?: () => void;
-    type?: 'separator' | 'checkbox';
-    checked?: boolean;
-  }
-
-  class Menu {
-    append(item: MenuItem): void;
-    popup(x: number, y: number): void;
-  }
-
-  const App: App;
-  const Window: Window;
-  const Menu: typeof Menu;
-  function MenuItem(options: MenuItem): MenuItem;
+  // Declare the global nw object
+  // The types come from @types/nw.js
+  const nw: {
+    App: nw.App;
+    Window: nw.Window;
+    Menu: typeof nw.Menu;
+    MenuItem: typeof nw.MenuItem;
+    Clipboard: nw.Clipboard;
+    Screen: nw.Screen;
+    Shell: nw.Shell;
+  };
 }
 
-// Global declaration for NW.js
-declare const nw: nw.App & nw.Window & {
-  Menu: typeof nw.Menu;
-  MenuItem: typeof nw.MenuItem;
-};
+// This export makes TypeScript treat this file as a module while still allowing global declarations
+export {};

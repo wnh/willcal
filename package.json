@@ -9,6 +9,7 @@
     "dev": "npm run build && nw --auto-open-devtools-for-tabs . -- --db=:memory:"
   },
   "dependencies": {
+    "@types/nw.js": "^0.92.0",
     "date-fns": "^2.30.0",
     "immer": "^10.0.0",
     "node-sqlite3-wasm": "^0.8.0",
