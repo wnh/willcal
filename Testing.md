@@ -59,6 +59,11 @@
 - [ ] Verify resized times are saved to database (persists after restart)
 - [ ] Verify resize handles are easier to grab with the larger 10px height
 - [ ] Verify the colored bar style is cleaner than the previous line style
+- [ ] Resize a block down to 15 minutes - verify the time/duration label is still visible
+- [ ] Resize the block down to exactly 15 minutes or less - verify the time/duration label disappears
+- [ ] Verify the top and bottom padding is removed for small blocks (15 min or less)
+- [ ] Resize the block back up to more than 15 minutes - verify the time/duration label reappears
+- [ ] Verify the top and bottom padding (12px) is restored for larger blocks
 
 ## Calendar Navigation
 - [ ] Navigate between weeks using calendar controls

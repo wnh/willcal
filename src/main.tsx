@@ -330,6 +330,11 @@ function App() {
       return <div style={{ height: '100%' }}>{children}</div>;
     }
 
+    // Calculate if block is small (15 minutes or less)
+    const durationMs = block.end.getTime() - block.start.getTime();
+    const durationMinutes = durationMs / (1000 * 60);
+    const isSmallBlock = durationMinutes <= 15;
+
     const handleContextMenu = (e: React.MouseEvent) => {
       e.preventDefault();
       console.log('Right click on block:', block);
@@ -363,9 +368,19 @@ function App() {
       menu.popup(e.clientX, e.clientY);
     };
 
+    // Clone children and add className if it's a React element
+    const childrenWithClass = React.Children.map(children, (child) => {
+      if (React.isValidElement(child)) {
+        return React.cloneElement(child as React.ReactElement<any>, {
+          className: isSmallBlock ? 'small-block' : '',
+        });
+      }
+      return child;
+    });
+
     return (
       <div onContextMenu={handleContextMenu} style={{ height: '100%' }}>
-        {children}
+        {childrenWithClass}
       </div>
     );
   }
@@ -383,6 +398,10 @@ function App() {
     const durationMs = block.end.getTime() - block.start.getTime();
     const durationHours = (durationMs / (1000 * 60 * 60)).toFixed(2);
     const timeRange = `${startTime} - ${durationHours}h`;
+
+    // Hide time label for blocks 15 minutes or shorter
+    const durationMinutes = durationMs / (1000 * 60);
+    const showTimeLabel = durationMinutes > 15;
 
     const handleEditClick = (e: React.MouseEvent) => {
       e.preventDefault();
@@ -425,10 +444,12 @@ function App() {
 
     if (isEditing) {
       return (
-        <div style={{ width: '100%' }}>
-          <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
-            {timeRange}
-          </div>
+        <div style={{ width: '100%', padding: showTimeLabel ? '0' : '2px' }}>
+          {showTimeLabel && (
+            <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
+              {timeRange}
+            </div>
+          )}
           <input
             type="text"
             value={editingTitle}
@@ -475,10 +496,12 @@ function App() {
         >
           ✏️
         </button>
-        <div style={{ paddingRight: '24px', paddingTop: '2px' }}>
-          <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>
-            {timeRange}
-          </div>
+        <div style={{ paddingRight: '24px', paddingTop: showTimeLabel ? '2px' : '0' }}>
+          {showTimeLabel && (
+            <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>
+              {timeRange}
+            </div>
+          )}
           <div>{block.title}</div>
         </div>
       </div>

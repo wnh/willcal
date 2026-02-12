@@ -30,3 +30,9 @@
   padding-top: 12px !important;
   padding-bottom: 12px !important;
 }
+
+/* Remove padding for small blocks (15 minutes or less) */
+.rbc-event-content.small-block {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
