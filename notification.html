@@ -21,11 +21,18 @@
       flex-direction: column;
       justify-content: center;
     }
+    body.warning {
+      background-color: #ffe6e6;
+      border-color: #cc0000;
+    }
     h2 {
       margin: 0 0 10px 0;
       font-size: 24px;
       font-weight: bold;
       color: #333;
+    }
+    body.warning h2 {
+      color: #cc0000;
     }
     p {
       margin: 0 0 15px 0;
@@ -54,16 +61,38 @@
 
   <script>
     let blockData = null;
+    let isGapWarning = false;
 
-    function setBlockData(block) {
+    function setBlockData(block, isWarning = false) {
       blockData = block;
+      isGapWarning = isWarning;
       updateDisplay();
     }
 
     function updateDisplay() {
       const blockTitle = document.getElementById('blockTitle');
       const blockTime = document.getElementById('blockTime');
-      if (blockData) {
+      const headerText = document.querySelector('p');
+
+      if (isGapWarning) {
+        document.body.classList.add('warning');
+        headerText.textContent = 'WARNING: Block Ending With No Follow-Up';
+        if (blockData) {
+          blockTitle.textContent = blockData.title;
+          const endTime = new Date(blockData.end);
+          const formattedTime = endTime.toLocaleString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+          blockTime.textContent = `Ends at ${formattedTime}`;
+        }
+      } else if (blockData) {
+        document.body.classList.remove('warning');
+        headerText.textContent = 'Next Upcoming Block';
         const startTime = new Date(blockData.start);
         const formattedTime = startTime.toLocaleString('en-US', {
           weekday: 'short',
@@ -76,6 +105,7 @@
         blockTitle.textContent = blockData.title;
         blockTime.textContent = formattedTime;
       } else {
+        document.body.classList.remove('warning');
         blockTitle.textContent = 'No upcoming blocks';
         blockTime.textContent = '';
       }

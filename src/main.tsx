@@ -59,7 +59,19 @@ function checkUpcomingBlocks() {
   const futureTime = new Date(now.getTime() + 30 * 1000); // 30 seconds from now
   const nextBlock = db.getNextUpcomingBlock(now, futureTime);
 
-  if (nextBlock) {
+  // Check if a block is ending soon with nothing scheduled after
+  const currentBlock = db.getCurrentBlock(now);
+  let isGapWarning = false;
+
+  if (currentBlock && !nextBlock) {
+    const timeUntilEnd = currentBlock.end.getTime() - now.getTime();
+    // If current block ends within 30 seconds and there's nothing after
+    if (timeUntilEnd > 0 && timeUntilEnd <= 30 * 1000) {
+      isGapWarning = true;
+    }
+  }
+
+  if (nextBlock || isGapWarning) {
     nw.Window.open('notification.html', {
       width: 350,
       height: 150,
@@ -80,7 +92,11 @@ function checkUpcomingBlocks() {
 
       // Pass block data to the notification window
       notificationWin.on('loaded', function() {
-        notificationWin.window.setBlockData(nextBlock);
+        if (isGapWarning && currentBlock) {
+          notificationWin.window.setBlockData(currentBlock, true);
+        } else if (nextBlock) {
+          notificationWin.window.setBlockData(nextBlock, false);
+        }
       });
     });
   }

@@ -222,6 +222,31 @@ class BlocksDatabase {
     return block;
   }
 
+  getCurrentBlock(now: Date): CalendarBlock | null {
+    const rows = this.all(
+      'SELECT * FROM blocks WHERE start <= ? AND end > ? ORDER BY start DESC LIMIT 1',
+      [now.toISOString(), now.toISOString()]
+    );
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const row = rows[0];
+    const block: CalendarBlock & { categoryId?: number } = {
+      id: row.id as number,
+      title: row.title as string,
+      start: new Date(row.start as string),
+      end: new Date(row.end as string),
+    };
+
+    if (row.category_id !== undefined && row.category_id !== null) {
+      block.categoryId = row.category_id as number;
+    }
+
+    return block;
+  }
+
   close(): void {
     this.db.close();
   }

@@ -51,6 +51,9 @@
 - [ ] Verify a gray colored bar appears at the bottom edge (10px height, full width)
 - [ ] Hover over block again and drag top edge to change start time
 - [ ] Hover over block and drag bottom edge to change end time
+- [ ] Hover over the top edge and drag to change start time
+- [ ] Move mouse away from the edges - verify resize handles disappear
+- [ ] Verify the resize handles don't overlap the block text (12px padding top/bottom)
 - [ ] Hover over the bottom edge and drag to change end time
 - [ ] Hover over the top edge and drag to change start time
 - [ ] Move mouse away from block - verify resize handles disappear

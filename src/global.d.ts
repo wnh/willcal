@@ -12,8 +12,10 @@ declare global {
          * Custom function defined in notification.html that receives block data
          * from the main window and displays it in the notification popup.
          * See notification.html line 56 where this function is defined and line 84 where it's attached to window.
+         * @param data - The calendar block to display
+         * @param isWarning - Whether this is a gap warning (block ending with nothing after)
          */
-        setBlockData(data: CalendarBlock): void;
+        setBlockData(data: CalendarBlock, isWarning?: boolean): void;
       };
     }
   }
