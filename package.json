@@ -9,10 +9,10 @@
     "dev": "npm run build && nw --auto-open-devtools-for-tabs . -- --db=:memory:"
   },
   "dependencies": {
-    "@types/nw.js": "^0.92.0",
     "date-fns": "^2.30.0",
     "immer": "^10.0.0",
     "node-sqlite3-wasm": "^0.8.0",
+    "nwjs": "^1.4.4",
     "react": "^18.2.0",
     "react-big-calendar": "^1.8.0",
     "react-dom": "^18.2.0",
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.2.0",
+    "@types/nw.js": "^0.92.0",
     "@types/react": "^18.2.0",
     "@types/react-big-calendar": "^1.8.0",
     "@types/react-dom": "^18.2.0",
