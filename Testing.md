@@ -375,3 +375,13 @@
   - [ ] A thin border on all sides (`1px solid #ddd`)
   - [ ] Bold text
 - [ ] Verify category hour totals (e.g., "Work: 5.0h") also have left borders matching their category colors
+
+### Mac Bundle (JS + WASM payload)
+Produces `build/willcal.tgz`: the app payload only (HTML, esbuild output, and
+production `node_modules` including the SQLite WASM binary). No NW.js runtime is
+included; run it with an NW.js runtime you already have on the Mac.
+- [ ] Run `npm run bundle` and confirm it finishes with "Archive: .../build/willcal.tgz"
+- [ ] Confirm `build/willcal/node_modules/node-sqlite3-wasm/dist/node-sqlite3-wasm.wasm` exists
+- [ ] Copy `build/willcal.tgz` to the M-series Mac and run `tar xzf willcal.tgz`
+- [ ] Launch with your NW.js runtime, e.g. `/Applications/nwjs.app/Contents/MacOS/nwjs ./willcal`
+- [ ] Verify the calendar loads, the DB opens (create/edit a block), and no `require` errors appear in the console
