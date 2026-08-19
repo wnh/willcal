@@ -120,12 +120,13 @@ WILLCAL_PASSWORD=secret npm start
 | `HOST` | `127.0.0.1` | Listen address. Loopback by default; set `0.0.0.0` to expose directly. |
 | `WILLCAL_DB` / `--db=` | XDG path | Database file, or `:memory:` |
 | `WILLCAL_SECRET` | derived from the password | Session signing key. Changing the password invalidates sessions by default. |
-| `WILLCAL_ALLOW_INSECURE_COOKIE` | unset | Set to `1` to drop the `Secure` cookie flag when serving plain HTTP on a non-localhost host |
+| `WILLCAL_ALLOW_INSECURE_COOKIE` | unset | Set to `1` to drop the `Secure` cookie flag. Required to sign in over plain HTTP from anything other than localhost. |
 | `WILLCAL_TRUST_PROXY` | unset | Set to `1` to read the client address from `X-Forwarded-For` for rate limiting |
 
 ## Deployment Notes
 
 - The server speaks plain HTTP. Put a TLS-terminating reverse proxy in front of it before exposing it to the internet, and leave `HOST` on loopback.
+- **Session cookies are marked `Secure`, which browsers only honour over HTTPS (localhost excepted, since browsers treat it as a secure context).** Reaching the server directly over `http://` on a LAN IP means the cookie is silently discarded and sign-in appears to do nothing. The server warns about this at startup when `HOST` is not loopback, and the login screen detects it and names the fix. Either terminate TLS in front, or set `WILLCAL_ALLOW_INSECURE_COOKIE=1` on a trusted network.
 - Static assets are served from a whitelist in `src/server/index.ts`; renaming a build output means updating `STATIC_FILES`.
 - Session cookies are stateless and signed. Signing out clears the browser's cookie but does not revoke a token that was copied elsewhere.
 

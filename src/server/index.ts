@@ -170,12 +170,34 @@ function serveStatic(res: http.ServerResponse, urlPath: string): void {
   res.end(contents);
 }
 
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
+
+/**
+ * Secure cookies work fine on localhost, because browsers treat it as a secure
+ * context. Bound to any other address over plain HTTP they are discarded
+ * without an error, which looks exactly like a password that does not work.
+ * Say so at startup rather than letting it be discovered at the login screen.
+ */
+function warnAboutCookieScope(config: Config): void {
+  if (!config.secureCookie || LOOPBACK_HOSTS.has(config.host)) return;
+
+  console.warn(
+    `\nHOST is ${config.host}, and session cookies are marked Secure.\n` +
+      '  Browsers only keep those over HTTPS, so if you reach this server directly\n' +
+      '  over http:// the login will appear to do nothing.\n' +
+      '  Serve it behind a TLS-terminating proxy, or for a trusted network restart\n' +
+      '  with WILLCAL_ALLOW_INSECURE_COOKIE=1.\n'
+  );
+}
+
 function main(): void {
   const config = loadConfig();
   const auth = new Auth(config.password, {
     secret: config.secret,
     secureCookie: config.secureCookie,
   });
+
+  warnAboutCookieScope(config);
 
   console.log('Using database:', config.dbPath);
   openDatabase(config.dbPath);

@@ -44,8 +44,15 @@ export const session = {
     return result.authenticated;
   },
 
-  async login(password: string): Promise<void> {
+  /**
+   * Returns true when the password was accepted *and* the browser kept the
+   * session cookie. Those can differ: a Secure cookie is silently discarded
+   * when the page is served over plain HTTP from anything but localhost, which
+   * otherwise looks like a login that succeeds and then does nothing.
+   */
+  async login(password: string): Promise<boolean> {
     await call('session.login', { password });
+    return session.status();
   },
 
   async logout(): Promise<void> {

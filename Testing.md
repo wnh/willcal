@@ -457,6 +457,24 @@ a password set, then opened `http://127.0.0.1:8080` in a browser.
 - [ ] Verify further attempts report "Too many failed sign-in attempts", including with the correct password
 - [ ] Wait 15 minutes (or restart the server) and verify sign-in works again
 
+### Access Over Plain HTTP From Another Machine
+
+Session cookies are marked `Secure`, so they only stick over HTTPS. Localhost
+is exempt (browsers treat it as a secure context), which is why this only
+appears once you connect from a different machine.
+
+- [ ] Start with `HOST=0.0.0.0` and *without* `WILLCAL_ALLOW_INSECURE_COOKIE`
+- [ ] Verify the server prints a startup warning naming `WILLCAL_ALLOW_INSECURE_COOKIE=1`
+- [ ] From another machine, open `http://<server-ip>:8080` and verify the login screen loads
+- [ ] Enter the correct password
+- [ ] Verify the app does NOT silently return to an empty login form
+- [ ] Verify it reports "Signed in, but your browser discarded the session cookie" and names the fix
+- [ ] Restart with `WILLCAL_ALLOW_INSECURE_COOKIE=1`
+- [ ] Verify the startup warning is gone
+- [ ] Sign in from the other machine and verify the calendar loads
+- [ ] Reload and verify the session persists
+- [ ] Behind an HTTPS reverse proxy, verify sign-in works *without* `WILLCAL_ALLOW_INSECURE_COOKIE`
+
 ### Session Expiry During Use
 - [ ] Sign in and leave the calendar open
 - [ ] Delete the `willcal_session` cookie in DevTools (Application > Cookies)

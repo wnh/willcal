@@ -15,7 +15,18 @@ export function LoginScreen({ onSignedIn }: LoginScreenProps) {
     setBusy(true);
     setError(null);
     try {
-      await session.login(password);
+      if (!(await session.login(password))) {
+        // The password was right but the cookie did not stick, so signing in
+        // would just bounce straight back here.
+        setError(
+          'Signed in, but your browser discarded the session cookie. This happens ' +
+            'when the app is served over plain HTTP from anything other than localhost. ' +
+            'Put HTTPS in front of it, or restart the server with ' +
+            'WILLCAL_ALLOW_INSECURE_COOKIE=1.'
+        );
+        setBusy(false);
+        return;
+      }
       setPassword('');
       onSignedIn();
     } catch (err: any) {
