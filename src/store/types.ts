@@ -1,12 +1,7 @@
-import { Category } from '../db/database';
+import { CalendarBlock, Category } from '../shared/types';
 
-export interface CalendarBlock {
-  id: number;
-  title: string;
-  start: Date;
-  end: Date;
-  categoryId?: number;  // Optional for backwards compatibility
-}
+// Re-exported so UI modules can keep importing these from the store.
+export type { CalendarBlock, Category };
 
 export interface DateRange {
   start: Date;
@@ -46,7 +41,7 @@ export interface AddCategoryAction {
 
 export interface UpdateCategoryAction {
   type: typeof UPDATE_CATEGORY;
-  payload: { id: number; name?: string; color?: string };
+  payload: { id: number; name?: string; color?: string; includeInTotals?: boolean };
 }
 
 export interface DeleteCategoryAction {

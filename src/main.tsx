@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { Calendar, dateFnsLocalizer, SlotInfo } from 'react-big-calendar';
@@ -8,99 +8,30 @@ import parse from 'date-fns/parse';
 import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import enUS from 'date-fns/locale/en-US';
-import path from 'path';
-import fs from 'fs';
-import os from 'os';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import './styles.css';
 import { store, RootState, AppDispatch } from './store/store';
-import { addBlock, deleteBlock, setDateRange, updateBlockTime, setCategories, addCategory, updateCategory, deleteCategory, toggleSidebar, updateBlockCategory } from './store/actions';
-import { CalendarBlock } from './store/types';
-import { openDatabase, getDatabase, Category } from './db/database';
+import {
+  setDateRange,
+  setCategories,
+  addCategory,
+  updateCategory,
+  deleteCategory,
+  toggleSidebar,
+} from './store/actions';
+import { CalendarBlock, Category } from './shared/types';
+import * as api from './client/api';
+import { onUnauthorized } from './client/rpc';
 import { Sidebar } from './components/Sidebar';
 import { CategoryDialog } from './components/CategoryDialog';
+import { LoginScreen } from './components/LoginScreen';
+import { NotificationModal } from './components/NotificationModal';
+import { BlockContextMenu, ContextMenuTarget } from './components/BlockContextMenu';
 
-// Parse command line arguments for database filename
-function getDatabaseFilename(): string {
-  const args = nw.App.argv.slice(2); // Skip node and script path
-
-  for (const arg of args) {
-    if (arg.startsWith('--db=')) {
-      return arg.substring(5);
-    }
-  }
-
-  // Default: use XDG_DATA_HOME or ~/.local/share
-  const dataHome = process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share');
-  const appDataDir = path.join(dataHome, 'willcal');
-
-  // Create directory if it doesn't exist
-  if (!fs.existsSync(appDataDir)) {
-    fs.mkdirSync(appDataDir, { recursive: true });
-  }
-
-  return path.join(appDataDir, 'willcal.db');
-}
-
-// Initialize database on startup
-try {
-  const dbFilename = getDatabaseFilename();
-  console.log('Using database:', dbFilename);
-  openDatabase(dbFilename);
-} catch (error) {
-  console.error('Database initialization failed:', error);
-}
-
-// Check for upcoming blocks and show notification
-function checkUpcomingBlocks() {
-  const db = getDatabase();
-  const now = new Date();
-  const futureTime = new Date(now.getTime() + 30 * 1000); // 30 seconds from now
-  const nextBlock = db.getNextUpcomingBlock(now, futureTime);
-
-  // Check if a block is ending soon with nothing scheduled after
-  const currentBlock = db.getCurrentBlock(now);
-  let isGapWarning = false;
-
-  if (currentBlock && !nextBlock) {
-    const timeUntilEnd = currentBlock.end.getTime() - now.getTime();
-    // If current block ends within 30 seconds and there's nothing after
-    if (timeUntilEnd > 0 && timeUntilEnd <= 30 * 1000) {
-      isGapWarning = true;
-    }
-  }
-
-  if (nextBlock || isGapWarning) {
-    nw.Window.open('notification.html', {
-      width: 350,
-      height: 150,
-      resizable: false,
-      frame: true,
-      show: true,
-    }, function(notificationWin: any) {
-      notificationWin.setAlwaysOnTop(true);
-
-      // Center the window on screen
-      const screenWidth = window.screen.width;
-      const screenHeight = window.screen.height;
-      const windowWidth = 350;
-      const windowHeight = 150;
-      const x = Math.floor((screenWidth - windowWidth) / 2);
-      const y = Math.floor((screenHeight - windowHeight) / 2);
-      notificationWin.moveTo(x, y);
-
-      // Pass block data to the notification window
-      notificationWin.on('loaded', function() {
-        if (isGapWarning && currentBlock) {
-          notificationWin.window.setBlockData(currentBlock, true);
-        } else if (nextBlock) {
-          notificationWin.window.setBlockData(nextBlock, false);
-        }
-      });
-    });
-  }
-}
+/** How far ahead the poll looks for a starting block, and how often it runs. */
+const NOTIFICATION_WINDOW_MS = 30 * 1000;
+const POLL_INTERVAL_MS = 30 * 1000;
 
 const locales = {
   'en-US': enUS,
@@ -121,7 +52,20 @@ interface BlockWrapperProps {
   children?: React.ReactNode;
 }
 
-function App() {
+interface PendingNotification {
+  block: CalendarBlock;
+  isWarning: boolean;
+  /** Identifies the notification so a dismissed one is not shown again. */
+  key: string;
+}
+
+/** Surfaces a failed action the way the desktop build did: a blocking alert. */
+function reportError(error: unknown, fallback: string): void {
+  const message = error instanceof Error ? error.message : String(error);
+  alert(message || fallback);
+}
+
+function App({ onSignOut }: { onSignOut: () => void }) {
   const dispatch = useDispatch<AppDispatch>();
   const dateRange = useSelector((state: RootState) => state.dateRange);
   const categories = useSelector((state: RootState) => state.categories);
@@ -133,29 +77,76 @@ function App() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [currentView, setCurrentView] = useState<string>('work_week');
   const [now, setNow] = useState<Date>(new Date());
+  const [blocks, setBlocks] = useState<CalendarBlock[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [contextMenu, setContextMenu] = useState<ContextMenuTarget | null>(null);
+  const [notification, setNotification] = useState<PendingNotification | null>(null);
+
+  // Notifications for a given block are shown once; dismissing one stops the
+  // 30-second poll from reopening it on the next tick.
+  const dismissedNotification = useRef<string | null>(null);
 
   // Border width for category color indicators
   const categoryBorderWidth = '0.5em';
 
+  /** Re-fetches blocks for the current range from the server. */
+  const reload = useCallback(() => setReloadKey((key) => key + 1), []);
+
   // Load categories on mount
   useEffect(() => {
-    const db = getDatabase();
-    const categories = db.getAllCategories();
-    dispatch(setCategories(categories));
+    api.categories
+      .getAll()
+      .then((loaded) => dispatch(setCategories(loaded)))
+      .catch((error) => console.error('Failed to load categories:', error));
   }, [dispatch]);
 
   // Update 'now' every 30 seconds to keep the current time indicator fresh
   // Also check for upcoming blocks
   useEffect(() => {
-    // Check immediately on mount
+    let cancelled = false;
+
+    const checkUpcomingBlocks = async () => {
+      try {
+        const { next, current } = await api.blocks.getUpcoming(
+          new Date(),
+          NOTIFICATION_WINDOW_MS
+        );
+        if (cancelled) return;
+
+        // A block ending within the window with nothing scheduled after it.
+        let isGapWarning = false;
+        if (current && !next) {
+          const timeUntilEnd = current.end.getTime() - Date.now();
+          if (timeUntilEnd > 0 && timeUntilEnd <= NOTIFICATION_WINDOW_MS) {
+            isGapWarning = true;
+          }
+        }
+
+        const block = isGapWarning ? current : next;
+        if (!block) return;
+
+        const key = `${isGapWarning ? 'gap' : 'next'}:${block.id}`;
+        if (dismissedNotification.current === key) return;
+
+        setNotification((existing) => (existing?.key === key ? existing : { block, isWarning: isGapWarning, key }));
+      } catch (error) {
+        // A dropped connection should not interrupt the calendar.
+        console.error('Upcoming block check failed:', error);
+      }
+    };
+
     checkUpcomingBlocks();
 
     const interval = setInterval(() => {
       setNow(new Date());
       checkUpcomingBlocks();
-    }, 30000); // 30 seconds
+    }, POLL_INTERVAL_MS);
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   // Set initial date range for the week view
@@ -167,12 +158,31 @@ function App() {
     dispatch(setDateRange(start, end));
   }, [dispatch]);
 
-  // Query blocks from DB whenever date range changes
-  const blocks = useMemo(() => {
-    if (!dateRange) return [];
-    const db = getDatabase();
-    return db.getBlocksByDateRange(dateRange.start, dateRange.end);
-  }, [dateRange]);
+  // Fetch blocks from the server whenever the range changes or something has
+  // been written. Stale responses are discarded so a slow request cannot
+  // overwrite the results of a newer one.
+  useEffect(() => {
+    if (!dateRange) return;
+
+    let cancelled = false;
+    setLoading(true);
+
+    api.blocks
+      .getByDateRange(dateRange.start, dateRange.end)
+      .then((loaded) => {
+        if (!cancelled) setBlocks(loaded);
+      })
+      .catch((error) => {
+        if (!cancelled) console.error('Failed to load blocks:', error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dateRange, reloadKey]);
 
   // Create synthetic all-day events showing category hour totals per day
   const eventsWithHourTotals = useMemo(() => {
@@ -267,12 +277,26 @@ function App() {
     dispatch(setDateRange(start, end));
   };
 
-  const handleDeleteBlock = (blockId: number) => {
-    deleteBlock(blockId);
-    // Re-trigger render by updating the date range (same range)
-    if (dateRange) {
-      dispatch(setDateRange(dateRange.start, dateRange.end));
+  const handleDeleteBlock = async (blockId: number) => {
+    try {
+      await api.blocks.delete(blockId);
+    } catch (error) {
+      reportError(error, 'Failed to delete block.');
     }
+    reload();
+  };
+
+  const handleSetBlockCategory = async (blockId: number, categoryId: number) => {
+    // Applied locally first so the color changes immediately, then confirmed.
+    setBlocks((current) =>
+      current.map((block) => (block.id === blockId ? { ...block, categoryId } : block))
+    );
+    try {
+      await api.blocks.updateCategory(blockId, categoryId);
+    } catch (error) {
+      reportError(error, 'Failed to change block category.');
+    }
+    reload();
   };
 
   // Category dialog handlers
@@ -281,63 +305,73 @@ function App() {
     setShowCategoryDialog(true);
   };
 
-  const handleEditCategoryClick = (category: Category) => {
-    // Reload categories from DB to get fresh data
-    const db = getDatabase();
-    const freshCategories = db.getAllCategories();
-    dispatch(setCategories(freshCategories));
-
-    // Find the fresh category data
-    const freshCategory = freshCategories.find(c => c.id === category.id);
-    setEditingCategory(freshCategory || category);
+  const handleEditCategoryClick = async (category: Category) => {
+    // Reload categories from the server to get fresh data
+    try {
+      const freshCategories = await api.categories.getAll();
+      dispatch(setCategories(freshCategories));
+      setEditingCategory(freshCategories.find(c => c.id === category.id) || category);
+    } catch (error) {
+      console.error('Failed to refresh categories:', error);
+      setEditingCategory(category);
+    }
     setShowCategoryDialog(true);
   };
 
-  const handleSaveCategory = (name: string, color: string, includeInTotals: boolean) => {
+  const handleSaveCategory = async (name: string, color: string, includeInTotals: boolean) => {
     try {
       if (editingCategory) {
+        await api.categories.update(editingCategory.id, { name, color, includeInTotals });
         dispatch(updateCategory(editingCategory.id, { name, color, includeInTotals }));
       } else {
-        dispatch(addCategory(name, color, includeInTotals));
+        const created = await api.categories.add(name, color, includeInTotals);
+        dispatch(addCategory(created));
       }
       setShowCategoryDialog(false);
 
-      // Reload categories from DB to ensure Redux state is fresh
-      const db = getDatabase();
-      const freshCategories = db.getAllCategories();
-      dispatch(setCategories(freshCategories));
+      // Reload categories from the server to ensure Redux state is fresh
+      dispatch(setCategories(await api.categories.getAll()));
+      reload();
     } catch (error: any) {
       // Provide user-friendly error for duplicate names
       if (error.message && error.message.includes('UNIQUE')) {
         alert(`A category named "${name}" already exists. Please choose a different name.`);
       } else {
-        alert(error.message || 'An error occurred while saving the category.');
+        reportError(error, 'An error occurred while saving the category.');
       }
     }
   };
 
-  const handleDeleteCategory = (categoryId: number) => {
+  const handleDeleteCategory = async (categoryId: number) => {
     // Prevent deletion of last category
     if (categories.length <= 1) {
       alert('Cannot delete the last category. You must have at least one category.');
       return;
     }
 
-    const db = getDatabase();
-    const blockCount = db.getBlockCountByCategory(categoryId);
-
-    if (blockCount > 0) {
-      alert(`Cannot delete category: ${blockCount} block(s) are using this category`);
-      return;
-    }
-
-    if (confirm('Are you sure you want to delete this category?')) {
-      try {
-        dispatch(deleteCategory(categoryId));
-      } catch (error: any) {
-        alert(error.message);
+    try {
+      const blockCount = await api.categories.blockCount(categoryId);
+      if (blockCount > 0) {
+        alert(`Cannot delete category: ${blockCount} block(s) are using this category`);
+        return;
       }
+
+      if (!confirm('Are you sure you want to delete this category?')) return;
+
+      await api.categories.delete(categoryId);
+      dispatch(deleteCategory(categoryId));
+    } catch (error) {
+      reportError(error, 'Failed to delete category.');
     }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await api.session.logout();
+    } catch (error) {
+      console.error('Sign out failed:', error);
+    }
+    onSignOut();
   };
 
   function BlockWrapper({ event: block, children }: BlockWrapperProps) {
@@ -353,35 +387,12 @@ function App() {
 
     const handleContextMenu = (e: React.MouseEvent) => {
       e.preventDefault();
-      console.log('Right click on block:', block);
-
-      const menu = new nw.Menu();
-
-      menu.append(nw.MenuItem({
-        label: 'Delete',
-        click: () => {
-          console.log('Delete clicked for block:', block);
-          handleDeleteBlock(block.id);
-        }
-      }));
-
-      menu.append(nw.MenuItem({ type: 'separator' }));
-
-      // Add category items
-      categories.forEach(category => {
-        menu.append(nw.MenuItem({
-          label: category.name,
-          type: 'checkbox',
-          checked: block.categoryId === category.id,
-          click: () => {
-            updateBlockCategory(block.id, category.id);
-            if (dateRange) {
-              dispatch(setDateRange(dateRange.start, dateRange.end));
-            }
-          }
-        }));
+      setContextMenu({
+        blockId: block.id,
+        categoryId: block.categoryId,
+        x: e.clientX,
+        y: e.clientY,
       });
-      menu.popup(e.clientX, e.clientY);
     };
 
     // Clone children and add className if it's a React element
@@ -426,17 +437,22 @@ function App() {
       setEditingTitle(block.title);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
       const finalTitle = editingTitle.trim() !== '' ? editingTitle.trim() : 'Untitled';
-      const db = getDatabase();
-      db.updateBlockTitle(block.id, finalTitle);
-
-      // Re-trigger render by updating the date range (same range)
-      if (dateRange) {
-        dispatch(setDateRange(dateRange.start, dateRange.end));
-      }
       setEditingBlockId(null);
       setEditingTitle('');
+
+      // Show the new title straight away, then persist it.
+      setBlocks((current) =>
+        current.map((b) => (b.id === block.id ? { ...b, title: finalTitle } : b))
+      );
+
+      try {
+        await api.blocks.updateTitle(block.id, finalTitle);
+      } catch (error) {
+        reportError(error, 'Failed to save block title.');
+      }
+      reload();
     };
 
     const handleCancel = () => {
@@ -524,7 +540,7 @@ function App() {
     );
   }
 
-  const handleSelectSlot = (slotInfo: SlotInfo) => {
+  const handleSelectSlot = async (slotInfo: SlotInfo) => {
     const firstCategory = categories[0];
     if (!firstCategory) {
       alert('Please create a category first');
@@ -538,54 +554,51 @@ function App() {
       end: slotInfo.end,
       categoryId: firstCategory.id,
     };
-    addBlock(newBlock);
-    // Enter edit mode for the new block
+
+    try {
+      await api.blocks.add(newBlock);
+    } catch (error) {
+      reportError(error, 'Failed to create block.');
+      return;
+    }
+
+    // Show it and enter edit mode without waiting for the round trip back.
+    setBlocks((current) => [...current, newBlock]);
     setEditingBlockId(newBlock.id);
     setEditingTitle('');
-    // Re-trigger render by updating the date range (same range)
-    if (dateRange) {
-      dispatch(setDateRange(dateRange.start, dateRange.end));
-    }
+    reload();
   };
 
   const handleSelectBlock = (block: CalendarBlock, e: React.SyntheticEvent) => {
-    const nativeEvent = e.nativeEvent as MouseEvent;
-    console.log('Block selected:', block);
-    console.log('Native event:', nativeEvent);
-    console.log('Button:', nativeEvent.button);
-
-    if (nativeEvent.button === 2) {
-      console.log('Right click detected!');
-    }
+    console.log('Block selected:', block, 'button:', (e.nativeEvent as MouseEvent).button);
   };
 
-  const handleBlockDrop = ({ event, start, end }: { event: CalendarBlock; start: string | Date; end: string | Date }) => {
+  const moveBlock = async (block: CalendarBlock, start: string | Date, end: string | Date) => {
     // Prevent moving synthetic hour total events
-    if (event.id < 0) return;
+    if (block.id < 0) return;
 
     const startDate = typeof start === 'string' ? new Date(start) : start;
     const endDate = typeof end === 'string' ? new Date(end) : end;
 
-    updateBlockTime(event.id, startDate, endDate);
-    // Re-trigger render by updating the date range (same range)
-    if (dateRange) {
-      dispatch(setDateRange(dateRange.start, dateRange.end));
+    // Applied locally first so the block does not snap back while the server
+    // round trip is in flight.
+    setBlocks((current) =>
+      current.map((b) => (b.id === block.id ? { ...b, start: startDate, end: endDate } : b))
+    );
+
+    try {
+      await api.blocks.updateTime(block.id, startDate, endDate);
+    } catch (error) {
+      reportError(error, 'Failed to move block.');
     }
+    reload();
   };
 
-  const handleBlockResize = ({ event, start, end }: { event: CalendarBlock; start: string | Date; end: string | Date }) => {
-    // Prevent resizing synthetic hour total events
-    if (event.id < 0) return;
+  const handleBlockDrop = ({ event, start, end }: { event: CalendarBlock; start: string | Date; end: string | Date }) =>
+    moveBlock(event, start, end);
 
-    const startDate = typeof start === 'string' ? new Date(start) : start;
-    const endDate = typeof end === 'string' ? new Date(end) : end;
-
-    updateBlockTime(event.id, startDate, endDate);
-    // Re-trigger render by updating the date range (same range)
-    if (dateRange) {
-      dispatch(setDateRange(dateRange.start, dateRange.end));
-    }
-  };
+  const handleBlockResize = ({ event, start, end }: { event: CalendarBlock; start: string | Date; end: string | Date }) =>
+    moveBlock(event, start, end);
 
   // Apply category colors to blocks
   const eventStyleGetter = (event: CalendarBlock) => {
@@ -646,6 +659,25 @@ function App() {
           />
           <span>Work hours only (6:00 AM - 6:00 PM)</span>
         </label>
+
+        <span style={{ fontSize: '12px', color: '#999', minWidth: '60px' }}>
+          {loading ? 'Loading...' : ''}
+        </span>
+
+        <button
+          onClick={handleSignOut}
+          style={{
+            marginLeft: 'auto',
+            background: 'none',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            padding: '6px 12px',
+            cursor: 'pointer',
+            fontSize: '14px',
+          }}
+        >
+          Sign out
+        </button>
       </div>
 
       {/* Main content area */}
@@ -692,6 +724,29 @@ function App() {
         </div>
       </div>
 
+      {/* Right-click menu on a block */}
+      {contextMenu && (
+        <BlockContextMenu
+          target={contextMenu}
+          categories={categories}
+          onDelete={handleDeleteBlock}
+          onSelectCategory={handleSetBlockCategory}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {/* Upcoming block / gap warning */}
+      {notification && (
+        <NotificationModal
+          block={notification.block}
+          isWarning={notification.isWarning}
+          onClose={() => {
+            dismissedNotification.current = notification.key;
+            setNotification(null);
+          }}
+        />
+      )}
+
       {/* Category Dialog */}
       {showCategoryDialog && (
         <CategoryDialog
@@ -704,9 +759,46 @@ function App() {
   );
 }
 
+/**
+ * Gates the app behind the shared password. Any request that comes back
+ * unauthorized (an expired cookie, or the server restarting with a new
+ * password) drops straight back to the login screen.
+ */
+function Root() {
+  const [status, setStatus] = useState<'checking' | 'in' | 'out'>('checking');
+
+  useEffect(() => {
+    onUnauthorized(() => setStatus('out'));
+    api.session
+      .status()
+      .then((authenticated) => setStatus(authenticated ? 'in' : 'out'))
+      .catch(() => setStatus('out'));
+  }, []);
+
+  if (status === 'checking') {
+    return (
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#999',
+      }}>
+        Loading...
+      </div>
+    );
+  }
+
+  if (status === 'out') {
+    return <LoginScreen onSignedIn={() => setStatus('in')} />;
+  }
+
+  return <App onSignOut={() => setStatus('out')} />;
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 root.render(
   <Provider store={store}>
-    <App />
+    <Root />
   </Provider>
 );

@@ -1,8 +1,9 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store/store';
-import { Category } from '../db/database';
+import { Category } from '../shared/types';
 import { reorderCategories } from '../store/actions';
+import { categories as categoriesApi } from '../client/api';
 
 interface SidebarProps {
   onAddCategory: () => void;
@@ -42,8 +43,16 @@ export function Sidebar({ onAddCategory, onEditCategory, onDeleteCategory, categ
     dispatch(reorderCategories(updatedCategories));
   };
 
-  const handleDragEnd = () => {
+  // Reordering is applied to Redux on every dragover for a live preview, but
+  // only written to the server once, when the drag finishes.
+  const handleDragEnd = async () => {
     setDraggedCategory(null);
+    if (!draggedCategory) return;
+    try {
+      await categoriesApi.reorder(categories);
+    } catch (error: any) {
+      alert(error.message || 'Failed to save category order.');
+    }
   };
 
   const handleDeleteClick = (category: Category, e: React.MouseEvent) => {

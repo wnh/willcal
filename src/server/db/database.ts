@@ -1,35 +1,8 @@
-import { CalendarBlock } from '../store/types';
+import { CalendarBlock, Category } from '../../shared/types';
 import { runMigrations } from './migrationRunner';
 import type { Database, BindValues, QueryResult } from 'node-sqlite3-wasm';
 
-export const PASTEL_COLORS = [
-  '#E57373', // Coral Pink
-  '#FF8A65', // Peach
-  '#FFD54F', // Golden Yellow
-  '#AED581', // Lime Green
-  '#4DB6AC', // Teal/Mint
-  '#4DD0E1', // Cyan
-  '#64B5F6', // Sky Blue
-  '#9575CD', // Lavender
-  '#F06292', // Magenta
-  '#F48FB1', // Rose Pink
-  '#FFAB91', // Light Coral
-  '#FFF176', // Lemon Yellow
-  '#81C784', // Soft Green
-  '#4FC3F7', // Light Blue
-  '#BA68C8', // Purple
-  '#90A4AE', // Blue Gray
-];
-
-export interface Category {
-  id: number;
-  name: string;
-  color: string;
-  sortOrder: number;
-  includeInTotals: boolean;
-}
-
-class BlocksDatabase {
+export class BlocksDatabase {
   private db: Database;
 
   constructor(db: Database) {
@@ -173,7 +146,7 @@ class BlocksDatabase {
     this.run('DELETE FROM categories WHERE id = ?', [id]);
   }
 
-  updateCategorySortOrder(categories: Category[]): void {
+  updateCategorySortOrder(categories: { id: number }[]): void {
     categories.forEach((category, index) => {
       this.run(
         'UPDATE categories SET sort_order = ? WHERE id = ?',
@@ -274,15 +247,10 @@ export function openDatabase(filename: string): BlocksDatabase {
   const migrationResult = runMigrations(db, filename);
 
   if (!migrationResult.success) {
+    // The database has already been restored from backup by the migration
+    // runner. Refuse to start rather than serve a half-migrated schema.
     const errorMsg = `Database migration failed: ${migrationResult.error?.message}`;
     console.error(errorMsg);
-
-    // Show error to user (NW.js alert)
-    if (typeof nw !== 'undefined') {
-      nw.Window.get().show();
-      alert(`Database migration failed!\n\n${migrationResult.error?.message}\n\nThe database has been restored from backup. Please check the console for details.`);
-    }
-
     throw new Error(errorMsg);
   }
 

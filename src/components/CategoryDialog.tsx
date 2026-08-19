@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Category, PASTEL_COLORS } from '../db/database';
+import { Category, PASTEL_COLORS } from '../shared/types';
 
 interface CategoryDialogProps {
   category?: Category; // undefined for new, defined for edit

@@ -1,13 +1,13 @@
 {
   "name": "willcal",
   "version": "1.0.0",
-  "main": "index.html",
+  "main": "dist/server/index.js",
   "scripts": {
     "build": "node esbuild.config.js",
-    "start": "npm run build && nw .",
-    "local": "npm run build && nw --auto-open-devtools-for-tabs . -- --db=./dev.db",
-    "dev": "npm run build && nw --auto-open-devtools-for-tabs . -- --db=:memory:",
-    "bundle": "npm run build && node scripts/bundle.mjs"
+    "typecheck": "tsc --noEmit",
+    "start": "npm run build && node dist/server/index.js",
+    "local": "npm run build && node dist/server/index.js --db=./dev.db",
+    "dev": "npm run build && node dist/server/index.js --db=:memory:"
   },
   "dependencies": {
     "date-fns": "^2.30.0",
@@ -21,12 +21,10 @@
   },
   "devDependencies": {
     "@types/node": "^25.2.0",
-    "@types/nw.js": "^0.92.0",
     "@types/react": "^18.2.0",
     "@types/react-big-calendar": "^1.8.0",
     "@types/react-dom": "^18.2.0",
     "esbuild": "^0.19.0",
-    "nwjs": "^1.4.4",
     "typescript": "^5.3.0"
   }
 }

@@ -40,11 +40,12 @@ export const blocksReducer = produce(
         break;
 
       case UPDATE_CATEGORY: {
-        const { id, name, color } = (action as UpdateCategoryAction).payload;
+        const { id, name, color, includeInTotals } = (action as UpdateCategoryAction).payload;
         const category = draft.categories.find(c => c.id === id);
         if (category) {
           if (name !== undefined) category.name = name;
           if (color !== undefined) category.color = color;
+          if (includeInTotals !== undefined) category.includeInTotals = includeInTotals;
         }
         break;
       }

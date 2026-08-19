@@ -3,3 +3,4 @@ dist
 willcal.db
 dev.db
 build
+*.swp
