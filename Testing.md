@@ -489,3 +489,52 @@ appears once you connect from a different machine.
 - [ ] Restart the server, reload the page, and verify everything works again
 - [ ] Navigate quickly between several weeks and verify blocks always match the visible range (no stale results from a slow request)
 - [ ] Verify "Loading..." appears briefly in the header while blocks are being fetched
+
+## `GET /now` Endpoint
+
+Returns the block covering the current instant. Sign in through the browser
+first, or use a cookie jar:
+
+```bash
+curl -c jar -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"session.login","params":{"password":"YOUR_PASSWORD"}}' \
+  http://127.0.0.1:8080/rpc
+curl -b jar http://127.0.0.1:8080/now
+```
+
+- [ ] Run `curl -i http://127.0.0.1:8080/now` with no cookie and verify `401` with `{"error":"Not signed in"}`
+- [ ] Sign in, then with a time when nothing is scheduled, verify the response is `{"now":"...","block":null}`
+- [ ] Create a block covering the current time, with a category, and give it a title
+- [ ] Verify `/now` returns a `block` object with the block's `name`, the category name in `calendar`, and ISO `start` / `end` matching the block
+- [ ] Verify `block.minutesRemaining` matches the time left on the block, rounded up (a block ending in 90 seconds reports 2)
+- [ ] Poll it again a minute later and verify `minutesRemaining` has counted down
+- [ ] Remove the block's category and verify `calendar` and `calendarId` are `null` while the rest of `block` is unchanged
+- [ ] Move the block into the past and verify `block` goes back to `null`
+- [ ] With two overlapping blocks covering now, verify the one that started most recently is reported
+- [ ] Verify `curl -X POST http://127.0.0.1:8080/now` returns `404` (the endpoint is read-only)
+- [ ] Verify the response carries `Cache-Control: no-store`
+
+## Hammerspoon Menubar Spoon (`hammerspoon/WillCalNow.spoon`)
+
+Requires a mac with Hammerspoon. Install per `hammerspoon/README.md`, then
+reload the Hammerspoon config.
+
+- [ ] With the server running and the correct password, verify the menubar shows the current block's title
+- [ ] With `showTimeRemaining` on, verify the title ends with the time left (`(36m)`, or `(1h30m)` past an hour)
+- [ ] Wait through one poll interval and verify the remaining time counts down
+- [ ] Click the menubar item and verify the menu shows the title, the category, and the start/end times in local time (not UTC)
+- [ ] Choose Refresh and verify it updates immediately
+- [ ] Choose Copy title and verify the block title is on the clipboard
+- [ ] Choose Open WillCal and verify the browser opens the configured URL
+- [ ] Choose Pause updates, verify the title becomes `WillCal (paused)` and stops changing, then Resume updates and verify it recovers
+- [ ] Move the block into the past and verify the menubar shows `idle` and the menu says "Nothing scheduled"
+- [ ] Create a block with no title and verify the menubar shows `(untitled)`
+- [ ] Create a block with a title longer than `maxTitleLength` and verify it is elided with an ellipsis
+- [ ] Let a block get within `warnMinutes` of ending and verify the menubar text turns red
+- [ ] Create a block with no category and verify the menu omits the category line rather than showing "null"
+- [ ] Stop the server and verify the menubar shows `WillCal ?` with `server unreachable` in the tooltip and the menu
+- [ ] Restart the server and verify the next poll recovers on its own, with no config reload
+- [ ] Start the Spoon with a wrong password and verify `sign-in rejected`
+- [ ] Start the Spoon with `password = nil` and verify `no password configured`
+- [ ] Restart the server with a different `WILLCAL_PASSWORD` (which invalidates the cookie) and verify the Spoon reports `sign-in rejected` rather than looping silently
+- [ ] Restart the server with the same password and verify the Spoon re-signs in on a 401 and keeps working

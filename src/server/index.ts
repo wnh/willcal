@@ -1,8 +1,8 @@
 // WillCal web server.
 //
-// Serves the static app shell and a single JSON-RPC endpoint at POST /rpc.
-// Everything that used to touch the filesystem from the browser (SQLite reads
-// and writes) now happens here.
+// Serves the static app shell, a single JSON-RPC endpoint at POST /rpc, and one
+// read-only REST endpoint at GET /now. Everything that used to touch the
+// filesystem from the browser (SQLite reads and writes) now happens here.
 
 import http from 'http';
 import fs from 'fs';
@@ -10,6 +10,7 @@ import path from 'path';
 import os from 'os';
 import { Auth } from './auth';
 import { methods } from './methods';
+import { currentTask } from './now';
 import { openDatabase } from './db/database';
 import {
   dispatch,
@@ -170,6 +171,43 @@ function serveStatic(res: http.ServerResponse, urlPath: string): void {
   res.end(contents);
 }
 
+/**
+ * GET /now. Gated by the same session cookie as /rpc, since it returns calendar
+ * contents. A script can get one by posting `session.login` and keeping the
+ * cookie jar:
+ *
+ *   curl -c jar -H 'Content-Type: application/json' \
+ *     -d '{"jsonrpc":"2.0","id":1,"method":"session.login","params":{"password":"..."}}' \
+ *     http://127.0.0.1:8080/rpc
+ *   curl -b jar http://127.0.0.1:8080/now
+ */
+function serveNow(req: http.IncomingMessage, res: http.ServerResponse, auth: Auth): void {
+  const json = (status: number, payload: unknown): void => {
+    const body = JSON.stringify(payload);
+    res.writeHead(status, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Length': Buffer.byteLength(body),
+      // "Right now" goes stale within the minute; never let it be cached.
+      'Cache-Control': 'no-store',
+    });
+    // HEAD must not carry a body, but the Content-Length above still tells a
+    // caller how big the GET would be.
+    res.end(req.method === 'HEAD' ? undefined : body);
+  };
+
+  if (!auth.isAuthenticated(req.headers.cookie)) {
+    json(401, { error: 'Not signed in' });
+    return;
+  }
+
+  try {
+    json(200, currentTask(new Date()));
+  } catch (error) {
+    console.error('GET /now failed:', error);
+    json(500, { error: 'Internal error' });
+  }
+}
+
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 
 /**
@@ -206,6 +244,10 @@ function main(): void {
     const urlPath = (req.url || '/').split('?')[0];
 
     if (req.method === 'GET' || req.method === 'HEAD') {
+      if (urlPath === '/now') {
+        serveNow(req, res, auth);
+        return;
+      }
       serveStatic(res, urlPath);
       return;
     }

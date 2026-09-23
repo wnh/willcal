@@ -18,7 +18,7 @@ client/api.ts                                                                   
 client/rpc.ts
 ```
 
-- **One endpoint.** Every server call is `POST /rpc` carrying a JSON-RPC 2.0 request. There is no REST surface. Batch requests are rejected.
+- **One endpoint for the app.** Every call the browser makes is `POST /rpc` carrying a JSON-RPC 2.0 request. Batch requests are rejected. The only exception is `GET /now` (see below), which exists for shell scripts, not for the client.
 - **Dates cross the wire as ISO strings.** `src/shared/types.ts` defines both the rich types (`CalendarBlock` with `Date`) and the wire types (`WireBlock` with `string`). Conversion happens in `src/client/api.ts` and `src/server/methods.ts`, nowhere else.
 - **The database is the source of truth.** Mutations are awaited, then the current date range is re-fetched. Moves, title edits, and category changes also apply optimistically first so the UI does not visibly snap back during the round trip.
 
@@ -34,7 +34,8 @@ client/rpc.ts
 - `src/styles.css` - global styles
 
 ### Server
-- `src/server/index.ts` - HTTP server: static assets, `/rpc` routing, config, session endpoints
+- `src/server/index.ts` - HTTP server: static assets, `/rpc` and `/now` routing, config, session endpoints
+- `src/server/now.ts` - the `GET /now` payload: the block covering the current instant
 - `src/server/rpc.ts` - JSON-RPC envelope parsing, dispatch, error mapping
 - `src/server/methods.ts` - the method table and param validation
 - `src/server/auth.ts` - shared-password check, signed session cookie, login rate limiting
@@ -68,6 +69,50 @@ client/rpc.ts
 | `categories.getAll` / `add` / `update` / `delete` / `reorder` / `blockCount` | Category CRUD |
 
 Adding a method means: add it to `methods` in `src/server/methods.ts` with param validation, then add a typed wrapper in `src/client/api.ts`. Never let unvalidated JSON reach SQLite.
+
+## REST Endpoint: `GET /now`
+
+One read-only endpoint, for status bars and shell scripts that do not want to build a JSON-RPC envelope. Implemented in `src/server/now.ts`, routed in `src/server/index.ts`. It reads the same row as `blocks.getUpcoming` and takes no parameters: "now" is the server's clock.
+
+It requires the same signed session cookie as `/rpc` and answers `401 {"error":"Not signed in"}` without one. Only GET and HEAD are routed; `POST /now` is a 404.
+
+With a block running:
+
+```json
+{
+  "now": "2026-08-19T18:50:27.820Z",
+  "block": {
+    "id": 9001,
+    "name": "Write the report",
+    "calendar": "Deep Work",
+    "calendarId": 2,
+    "start": "2026-08-19T18:40:27.790Z",
+    "end": "2026-08-19T19:25:57.807Z",
+    "minutesRemaining": 36
+  }
+}
+```
+
+Idle:
+
+```json
+{ "now": "2026-08-19T18:50:27.764Z", "block": null }
+```
+
+- `block` is all-or-nothing: null when nothing is scheduled over `now`, otherwise every field is present. That is the ordinary answer during any gap in the schedule, not an error. The key is always emitted, so `jq -r '.block.name // "idle"'` works either way.
+- `calendar` / `calendarId` are `null` when the block has no category.
+- `minutesRemaining` is rounded **up**, so a running block never reports 0.
+- `start` is inclusive and `end` exclusive, so back-to-back blocks never both match and never leave a gap.
+- When blocks overlap, the one that started most recently wins (`getCurrentBlock` orders by `start DESC`).
+
+Getting a cookie from a script:
+
+```bash
+curl -c jar -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"session.login","params":{"password":"..."}}' \
+  http://127.0.0.1:8080/rpc
+curl -b jar http://127.0.0.1:8080/now
+```
 
 ## Database Schema
 
