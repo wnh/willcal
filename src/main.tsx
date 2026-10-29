@@ -28,6 +28,7 @@ import { CategoryDialog } from './components/CategoryDialog';
 import { LoginScreen } from './components/LoginScreen';
 import { NotificationModal } from './components/NotificationModal';
 import { BlockContextMenu, ContextMenuTarget } from './components/BlockContextMenu';
+import TwoDayView from './components/TwoDayView';
 
 /** How far ahead the poll looks for a starting block, and how often it runs. */
 const NOTIFICATION_WINDOW_MS = 30 * 1000;
@@ -698,7 +699,7 @@ function App({ onSignOut }: { onSignOut: () => void }) {
             localizer={localizer}
             events={eventsWithHourTotals}
             defaultView="work_week"
-            views={['month', 'week', 'work_week', 'day', 'agenda']}
+            views={{ month: true, week: true, work_week: true, day: true, two_day: TwoDayView, agenda: true } as any}
             selectable
             step={15}
             timeslots={4}
@@ -712,6 +713,7 @@ function App({ onSignOut }: { onSignOut: () => void }) {
             onEventDrop={handleBlockDrop}
             onEventResize={handleBlockResize}
             eventPropGetter={eventStyleGetter}
+            messages={{ two_day: '2 Day' } as any}
             formats={{
               eventTimeRangeFormat: () => '',
             }}
