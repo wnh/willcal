@@ -58,6 +58,17 @@ obj.warnMinutes = 5
 --- Menubar text when nothing is scheduled over now. Default `"idle"`.
 obj.idleTitle = "idle"
 
+--- WillCalNow.alertOnChange
+--- Variable
+--- Pop up an `hs.alert` whenever the block covering now changes, i.e. the
+--- timer moves on to a new block (or to/from idle). Default true.
+obj.alertOnChange = true
+
+--- WillCalNow.alertDuration
+--- Variable
+--- Seconds the change alert stays on screen. Default 3.
+obj.alertDuration = 3
+
 -- Runtime state. `cookie` is a Cookie header value, not a Set-Cookie one.
 obj.menubar = nil
 obj.timer = nil
@@ -65,6 +76,8 @@ obj.cookie = nil
 obj.block = nil
 obj.error = nil
 obj.signingIn = false
+obj.lastBlockKey = nil
+obj.seenBlock = false
 
 local ELLIPSIS = "\u{2026}"
 
@@ -198,6 +211,8 @@ function obj:stop()
   self.cookie = nil
   self.block = nil
   self.error = nil
+  self.lastBlockKey = nil
+  self.seenBlock = false
   return self
 end
 
@@ -295,6 +310,7 @@ function obj:_fetch(allowRetry)
         return
       end
       -- `block` is all-or-nothing, and null during any gap in the schedule.
+      self:_maybeAlert(payload.block)
       self.block = payload.block
       self.error = nil
       self:_render()
@@ -313,6 +329,33 @@ function obj:_fetch(allowRetry)
 
     self:_fail(status < 0 and "server unreachable" or ("/now HTTP " .. status))
   end)
+end
+
+-- Fires WillCalNow.alertOnChange whenever the block covering now differs
+-- from the one last seen, including transitions to and from idle. The first
+-- fetch after start()/stop() only records a baseline; it does not alert.
+function obj:_maybeAlert(newBlock)
+  local key = newBlock and (tostring(newBlock.id) .. ":" .. tostring(newBlock.start)) or "idle"
+
+  if not self.seenBlock then
+    self.seenBlock = true
+    self.lastBlockKey = key
+    return
+  end
+
+  if key == self.lastBlockKey then return end
+  self.lastBlockKey = key
+
+  if not self.alertOnChange then return end
+
+  if not newBlock then
+    hs.alert.show("WillCal: " .. self.idleTitle, self.alertDuration)
+    return
+  end
+
+  local name = newBlock.name
+  if type(name) ~= "string" or name == "" then name = "(untitled)" end
+  hs.alert.show("WillCal: " .. name, self.alertDuration)
 end
 
 function obj:_decode(body)

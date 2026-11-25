@@ -11,6 +11,11 @@ Nothing scheduled shows `idle`. The last few minutes of a block turn red. The
 menubar item's menu shows the category, the block's start and end in local
 time, and offers Refresh, Copy title, Open WillCal, and Pause updates.
 
+Whenever the block covering now changes - the timer moves on to a new block,
+or in or out of idle - an `hs.alert` pops up with the new block's title (or
+`idle`). This fires on the regular poll, so it lands within `interval`
+seconds of the change, not exactly on the block's start time.
+
 ## Install
 
 ```bash
@@ -50,6 +55,8 @@ Pass any of these to `start()` (or `configure()`, or assign them directly):
 | `showTimeRemaining` | `true` | Append `(36m)` to the title |
 | `warnMinutes` | `5` | Turn the text red inside this many minutes; `0` disables |
 | `idleTitle` | `idle` | Text shown when nothing is scheduled |
+| `alertOnChange` | `true` | Pop up an alert when the current block changes |
+| `alertDuration` | `3` | Seconds the change alert stays on screen |
 
 ## How it authenticates
 
